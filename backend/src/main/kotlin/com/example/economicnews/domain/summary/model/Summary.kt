@@ -1,8 +1,5 @@
 package com.example.economicnews.domain.summary.model
 
-import com.example.economicnews.domain.common.SupplementLevel
-import com.example.economicnews.domain.common.SummaryMode
-import com.example.economicnews.domain.common.SummaryStatus
 import com.example.economicnews.domain.news.model.NewsArticle
 import jakarta.persistence.*
 import org.hibernate.annotations.CreationTimestamp

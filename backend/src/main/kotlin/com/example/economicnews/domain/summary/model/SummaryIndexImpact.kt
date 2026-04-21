@@ -1,6 +1,5 @@
 package com.example.economicnews.domain.summary.model
 
-import com.example.economicnews.domain.common.ImpactDirection
 import jakarta.persistence.*
 
 @Entity
