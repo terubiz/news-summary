@@ -18,10 +18,9 @@ class RegisterUserUseCase(
         if (userRepository.existsByEmail(command.email)) {
             throw IllegalArgumentException("このメールアドレスは既に使用されています")
         }
-        val user = User(
+        return userRepository.save(
             email = command.email,
             passwordHash = passwordService.hash(command.rawPassword)
         )
-        return userRepository.save(user)
     }
 }

@@ -11,14 +11,15 @@
 ### model/
 | クラス | 役割 |
 |---|---|
-| `User.kt` | ユーザーエンティティ（集約ルート）。email, passwordHash を保持 |
-| `RefreshToken.kt` | リフレッシュトークンエンティティ。tokenHash, expiresAt を保持 |
+| `UserId.kt` | 値オブジェクト。永続化済みエンティティのIDをnon-nullで保証 |
+| `User.kt` | ドメインモデル（集約ルート）。JPAアノテーションなし。id: UserId |
+| `RefreshToken.kt` | ドメインモデル。userId: UserId |
 
 ### repository/
 | クラス | 役割 |
 |---|---|
-| `UserRepository.kt` | ユーザーリポジトリポート。findByEmail, existsByEmail |
-| `RefreshTokenRepository.kt` | トークンリポジトリポート。findByTokenHash, deleteAllExpiredBefore |
+| `UserRepository.kt` | ドメイン層ポート（インターフェース）。ドメインモデルのみを扱う |
+| `RefreshTokenRepository.kt` | ドメイン層ポート（インターフェース） |
 
 ### service/
 | クラス | 役割 |
@@ -27,7 +28,19 @@
 | `JwtService.kt` | JWTトークン生成・検証インターフェース |
 | `PasswordService.kt` | bcryptハッシュ化・検証インターフェース |
 
-## インフラ層（user/infrastructure/security/）
+## インフラ層（user/infrastructure/）
+
+### persistence/
+| クラス | 役割 |
+|---|---|
+| `UserJpaEntity.kt` | JPA用エンティティ（@Entity, id: Long? = null） |
+| `RefreshTokenJpaEntity.kt` | JPA用エンティティ |
+| `UserJpaRepository.kt` | Spring Data JPA リポジトリ（JpaEntity を扱う） |
+| `RefreshTokenJpaRepository.kt` | Spring Data JPA リポジトリ |
+| `UserRepositoryImpl.kt` | UserRepository実装。JpaEntity ↔ ドメインモデル変換。idのnullチェックはここで1箇所のみ |
+| `RefreshTokenRepositoryImpl.kt` | RefreshTokenRepository実装 |
+
+### security/
 | クラス | 役割 |
 |---|---|
 | `JwtServiceImpl.kt` | jjwt使用。HS256署名、アクセストークン生成・検証 |

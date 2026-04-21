@@ -3,6 +3,7 @@ package com.example.news_summary.user.application.usecase
 import com.example.news_summary.domain.user.model.RefreshToken
 import com.example.news_summary.domain.user.repository.RefreshTokenRepository
 import com.example.news_summary.domain.user.repository.UserRepository
+import com.example.news_summary.domain.user.model.UserId
 import com.example.news_summary.domain.user.service.JwtService
 import com.example.news_summary.domain.user.service.PasswordService
 import org.springframework.beans.factory.annotation.Value
@@ -35,13 +36,14 @@ class AuthenticateUserUseCase(
             throw IllegalArgumentException("メールアドレスまたはパスワードが正しくありません")
         }
 
-        val accessToken = jwtService.generateAccessToken(user.id!!, user.email)
+        // user.id は UserId（non-null）なので !! 不要
+        val accessToken = jwtService.generateAccessToken(user.id.value, user.email)
         val rawRefreshToken = jwtService.generateRefreshToken()
         val tokenHash = sha256(rawRefreshToken)
 
         refreshTokenRepository.save(
             RefreshToken(
-                userId = user.id!!,
+                userId = user.id,
                 tokenHash = tokenHash,
                 expiresAt = Instant.now().plusMillis(refreshTokenExpiration)
             )
@@ -66,13 +68,13 @@ class AuthenticateUserUseCase(
 
         // 旧トークンを削除して新しいトークンを発行（ローテーション）
         refreshTokenRepository.delete(stored)
-        val newAccessToken = jwtService.generateAccessToken(user.id!!, user.email)
+        val newAccessToken = jwtService.generateAccessToken(user.id.value, user.email)
         val newRawRefreshToken = jwtService.generateRefreshToken()
         val newTokenHash = sha256(newRawRefreshToken)
 
         refreshTokenRepository.save(
             RefreshToken(
-                userId = user.id!!,
+                userId = user.id,
                 tokenHash = newTokenHash,
                 expiresAt = Instant.now().plusMillis(refreshTokenExpiration)
             )
