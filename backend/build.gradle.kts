@@ -1,24 +1,24 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 plugins {
-    id("org.springframework.boot") version "3.2.1"
-    id("io.spring.dependency-management") version "1.1.4"
-    kotlin("jvm") version "1.9.21"
-    kotlin("plugin.spring") version "1.9.21"
-    kotlin("plugin.jpa") version "1.9.21"
-    kotlin("plugin.allopen") version "1.9.21"
+    id("org.springframework.boot") version "3.5.14-SNAPSHOT"
+    id("io.spring.dependency-management") version "1.1.7"
+    kotlin("jvm") version "1.9.25"
+    kotlin("plugin.spring") version "1.9.25"
+    kotlin("plugin.jpa") version "1.9.25"
 }
 
 group = "com.example"
 version = "0.0.1-SNAPSHOT"
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
 }
 
 repositories {
     mavenCentral()
     maven { url = uri("https://repo.spring.io/milestone") }
+    maven { url = uri("https://repo.spring.io/snapshot") }
 }
 
 extra["springAiVersion"] = "1.0.0-M6"
@@ -41,8 +41,9 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
 
     // Database
-    implementation("org.postgresql:postgresql")
+    runtimeOnly("org.postgresql:postgresql")
     implementation("org.flywaydb:flyway-core")
+    implementation("org.flywaydb:flyway-database-postgresql")
 
     // JWT
     implementation("io.jsonwebtoken:jjwt-api:0.12.3")
@@ -51,17 +52,19 @@ dependencies {
 
     // Testing
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testImplementation("org.springframework.security:spring-security-test")
-    
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
     // jqwik for property-based testing
     testImplementation("net.jqwik:jqwik:1.8.2")
     testImplementation("net.jqwik:jqwik-kotlin:1.8.2")
-    
+
     // Testcontainers
     testImplementation("org.testcontainers:testcontainers:1.19.3")
     testImplementation("org.testcontainers:postgresql:1.19.3")
     testImplementation("org.testcontainers:junit-jupiter:1.19.3")
-    
+
     // WireMock
     testImplementation("org.wiremock:wiremock-standalone:3.3.1")
 }
@@ -72,21 +75,16 @@ dependencyManagement {
     }
 }
 
+kotlin {
+    compilerOptions {
+        freeCompilerArgs.addAll("-Xjsr305=strict")
+    }
+}
+
 allOpen {
     annotation("jakarta.persistence.Entity")
     annotation("jakarta.persistence.MappedSuperclass")
     annotation("jakarta.persistence.Embeddable")
-    annotation("org.springframework.stereotype.Service")
-    annotation("org.springframework.stereotype.Component")
-    annotation("org.springframework.stereotype.Repository")
-    annotation("org.springframework.web.bind.annotation.RestController")
-}
-
-tasks.withType<KotlinCompile> {
-    kotlinOptions {
-        freeCompilerArgs += "-Xjsr305=strict"
-        jvmTarget = "17"
-    }
 }
 
 tasks.withType<Test> {

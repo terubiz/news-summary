@@ -1,1 +1,7 @@
-rootProject.name = "economic-news"
+pluginManagement {
+    repositories {
+        maven { url = uri("https://repo.spring.io/milestone") }
+        gradlePluginPortal()
+    }
+}
+rootProject.name = "news-summary"
