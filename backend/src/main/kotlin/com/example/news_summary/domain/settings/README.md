@@ -11,20 +11,34 @@
 ### model/
 | クラス | 役割 |
 |---|---|
-| `SummarySettings.kt` | 要約設定エンティティ（集約ルート）。selectedIndices, analysisPerspectives, supplementLevel, summaryMode |
-| `CollectionSchedule.kt` | 収集スケジュールエンティティ。cronExpression, enabled |
+| `SummarySettingsId.kt` | 値オブジェクト。永続化済みエンティティのIDをnon-nullで保証 |
+| `SummarySettings.kt` | ドメインモデル（集約ルート）。JPAアノテーションなし。id: SummarySettingsId |
+| `CollectionScheduleId.kt` | 値オブジェクト。永続化済みエンティティのIDをnon-nullで保証 |
+| `CollectionSchedule.kt` | ドメインモデル。JPAアノテーションなし。id: CollectionScheduleId |
 | `AnalysisPerspective.kt` | 分析観点列挙型（INTEREST_RATE〜CUSTOM の9種） |
 
 ### repository/
 | クラス | 役割 |
 |---|---|
-| `SummarySettingsRepository.kt` | 要約設定リポジトリポート。findByUserId |
-| `CollectionScheduleRepository.kt` | スケジュールリポジトリポート。findByUserId, findByEnabledTrue |
+| `SummarySettingsRepository.kt` | ドメイン層ポート（インターフェース）。ドメインモデルのみを扱う |
+| `CollectionScheduleRepository.kt` | ドメイン層ポート（インターフェース）。ドメインモデルのみを扱う |
 
 ### service/
 | クラス | 役割 |
 |---|---|
 | `SummarySettingsService.kt` | 設定ドメインサービスインターフェース。getByUserId(), save(), getScheduleByUserId(), saveSchedule() |
+
+## インフラ層（settings/infrastructure/）
+
+### persistence/
+| クラス | 役割 |
+|---|---|
+| `SummarySettingsJpaEntity.kt` | JPA用エンティティ（@Entity, id: Long? = null） |
+| `CollectionScheduleJpaEntity.kt` | JPA用エンティティ |
+| `SummarySettingsJpaRepository.kt` | Spring Data JPA リポジトリ（JpaEntity を扱う） |
+| `CollectionScheduleJpaRepository.kt` | Spring Data JPA リポジトリ |
+| `SummarySettingsRepositoryImpl.kt` | SummarySettingsRepository実装。JpaEntity ↔ ドメインモデル変換。idのnullチェックはここで1箇所のみ |
+| `CollectionScheduleRepositoryImpl.kt` | CollectionScheduleRepository実装 |
 
 ## 機能別処理フロー
 
@@ -67,3 +81,4 @@ Client → SettingsController.updateSchedule(request)
 - **AnalysisPerspective を settings ドメインに配置**: 分析観点の選択肢は設定の責務。summary ドメインはこの値を受け取って使うだけ
 - **SupplementLevel/SummaryMode は summary ドメインに配置**: 要約の振る舞いを定義する型なので summary に所属。settings はこれらを参照する（ドメイン間の依存方向: settings → summary）
 - **デフォルト値**: 設定が存在しない場合は INTERMEDIATE / STANDARD をデフォルトとして返す
+- **ドメインモデルとJPAエンティティの分離**: ドメインモデルはJPAアノテーションを持たない純粋なオブジェクト。JpaEntityはインフラ層に配置し、RepositoryImplで変換を行う
