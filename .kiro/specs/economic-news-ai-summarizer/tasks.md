@@ -13,46 +13,46 @@
   - `build.gradle.kts` に依存関係を追加する（Spring Boot Web・Security・Data JPA・Mail・AI・jjwt・jqwik・Testcontainers・WireMock・Flyway）
   - _要件: 7.1, 7.2, 8.1_
 
-- [-] 2. データベーススキーマとJPAエンティティの実装
-  - [ ] 2.1 Flywayマイグレーションファイルを作成する
+- [x] 2. データベーススキーマとJPAエンティティの実装
+  - [x] 2.1 Flywayマイグレーションファイルを作成する
     - `V1__create_users.sql`・`V2__create_summary_settings.sql`・`V3__create_collection_schedules.sql`・`V4__create_news_articles.sql`・`V5__create_index_data.sql`・`V6__create_summaries.sql`・`V7__create_summary_relations.sql`・`V8__create_delivery_channels.sql`・`V9__create_delivery_logs.sql`・`V10__create_collection_logs.sql`・`V11__create_refresh_tokens.sql` を作成する
     - `source_url` カラムに UNIQUE 制約を追加する（重複排除のため）
     - _要件: 1.3, 1.5, 1.6, 2.4, 5.9_
 
-  - [ ] 2.2 JPAエンティティクラスを実装する
+  - [x] 2.2 JPAエンティティクラスを実装する
     - `User`・`SummarySettings`・`CollectionSchedule`・`NewsArticle`・`IndexData`・`Summary`・`SummaryIndexImpact`・`DeliveryChannel`・`DeliveryLog`・`CollectionLog`・`RefreshToken` エンティティを作成する
     - `summaries.status`・`supplement_level`・`summary_mode`・`channel_type` の Kotlin enum を定義する
     - _要件: 1.3, 2.4, 3.1, 5.9_
 
-  - [ ] 2.3 Spring Data JPA リポジトリを実装する
+  - [x] 2.3 Spring Data JPA リポジトリを実装する
     - 各エンティティに対応するリポジトリインターフェースを作成する
     - `NewsArticleRepository.existsBySourceUrlOrTitle()`・`SummaryRepository.findByUserIdAndGeneratedAtAfter()`・`DeliveryLogRepository.findByChannelIdAndSummaryId()` 等のカスタムクエリメソッドを追加する
     - _要件: 1.5, 4.1, 4.3, 5.9_
 
-- [ ] 3. ユーザー認証・認可の実装
-  - [ ] 3.1 JWT サービスとパスワードハッシュを実装する
+- [x] 3. ユーザー認証・認可の実装
+  - [x] 3.1 JWT サービスとパスワードハッシュを実装する
     - `JwtService`（トークン生成・検証・有効期限チェック）を実装する
     - `UserDetailsService` 実装と bcrypt パスワードエンコーダを設定する
     - リフレッシュトークンの生成・保存・検証ロジックを実装する
     - _要件: 7.2, 7.5, 7.6_
 
-  - [ ] 3.2 Spring Security 設定とレート制限を実装する
+  - [x] 3.2 Spring Security 設定とレート制限を実装する
     - JWT フィルタチェーンを設定し、保護エンドポイントと公開エンドポイントを定義する
     - IP アドレスベースのログイン失敗カウンタと15分ブロック機能を実装する（`RateLimiter`）
     - 1分間60リクエスト制限のレート制限フィルタを実装する
     - _要件: 7.3, 7.4, 7.7, 8.3, 8.5_
 
-  - [ ] 3.3 認証 API コントローラを実装する
+  - [x] 3.3 認証 API コントローラを実装する
     - `POST /api/v1/auth/register`・`POST /api/v1/auth/login`・`POST /api/v1/auth/refresh` エンドポイントを実装する
     - グローバル例外ハンドラ（`@ControllerAdvice`）を実装し、統一エラーレスポンス形式を返す
     - _要件: 7.1, 7.2, 7.3, 7.6_
 
-  - [ ]* 3.4 JWT認証のプロパティテストを書く
+  - [x]* 3.4 JWT認証のプロパティテストを書く
     - **プロパティ 8: JWT認証の排他性**
     - **検証対象: 要件 7.4, 8.3**
     - 任意の無効なJWTトークン文字列に対して、保護エンドポイントが401を返すことを検証する
 
-  - [ ]* 3.5 レート制限のプロパティテストを書く
+  - [x]* 3.5 レート制限のプロパティテストを書く
     - **プロパティ 9: レート制限の一貫性**
     - **検証対象: 要件 8.5**
     - 1分間に60回を超えるリクエストに対して、超過分がすべて429を返すことを検証する

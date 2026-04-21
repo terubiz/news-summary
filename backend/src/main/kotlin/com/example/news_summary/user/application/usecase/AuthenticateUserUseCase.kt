@@ -41,7 +41,7 @@ class AuthenticateUserUseCase(
 
         refreshTokenRepository.save(
             RefreshToken(
-                userId = user.id,
+                userId = user.id!!,
                 tokenHash = tokenHash,
                 expiresAt = Instant.now().plusMillis(refreshTokenExpiration)
             )
@@ -72,7 +72,7 @@ class AuthenticateUserUseCase(
 
         refreshTokenRepository.save(
             RefreshToken(
-                userId = user.id,
+                userId = user.id!!,
                 tokenHash = newTokenHash,
                 expiresAt = Instant.now().plusMillis(refreshTokenExpiration)
             )

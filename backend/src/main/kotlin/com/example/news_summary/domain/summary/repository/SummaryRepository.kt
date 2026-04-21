@@ -1,6 +1,6 @@
 package com.example.news_summary.domain.summary.repository
 
-import com.example.news_summary.domain.common.SummaryStatus
+import com.example.news_summary.domain.summary.model.SummaryStatus
 import com.example.news_summary.domain.summary.model.Summary
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
