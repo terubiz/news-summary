@@ -1,16 +1,13 @@
 package com.example.news_summary.domain.news.model
 
+import com.example.news_summary.domain.user.model.UserId
 import java.time.Instant
 
-/**
- * ニュース収集実行ログ ドメインモデル（newsドメインに属する）
- * JPAアノテーションを持たない純粋なドメインオブジェクト。
- */
 data class CollectionLog(
-    val id: CollectionLogId,
-    val userId: Long,
+    val id: CollectionLogId? = null,
+    val userId: UserId,
     val articleCount: Int = 0,
     val status: String,
     val errorMessage: String? = null,
-    val executedAt: Instant
+    val executedAt: Instant? = null
 )

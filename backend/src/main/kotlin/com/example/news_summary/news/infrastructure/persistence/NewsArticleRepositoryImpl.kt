@@ -5,20 +5,17 @@ import com.example.news_summary.domain.news.model.NewsArticleId
 import com.example.news_summary.domain.news.repository.NewsArticleRepository
 import org.springframework.stereotype.Component
 import java.time.Instant
-import java.util.Optional
 
-/**
- * NewsArticleRepository のインフラ層実装。
- * JpaEntity ↔ ドメインモデルの変換を一元管理する。
- * id の null → NewsArticleId 変換はこのクラス内でのみ行われる。
- */
 @Component
 class NewsArticleRepositoryImpl(
     private val jpaRepository: NewsArticleJpaRepository
 ) : NewsArticleRepository {
 
-    override fun findById(id: NewsArticleId): Optional<NewsArticle> =
-        jpaRepository.findById(id.value).map { it.toDomain() }
+    override fun findById(id: NewsArticleId): NewsArticle? =
+        jpaRepository.findById(id.value).map { it.toDomain() }.orElse(null)
+
+    override fun findByIds(ids: List<NewsArticleId>): List<NewsArticle> =
+        jpaRepository.findAllById(ids.map { it.value }).map { it.toDomain() }
 
     override fun existsBySourceUrl(sourceUrl: String): Boolean =
         jpaRepository.existsBySourceUrl(sourceUrl)
@@ -31,7 +28,7 @@ class NewsArticleRepositoryImpl(
 
     override fun save(article: NewsArticle): NewsArticle {
         val entity = NewsArticleJpaEntity(
-            id = article.id.value,
+            id = article.id?.value,
             title = article.title,
             content = article.content,
             sourceUrl = article.sourceUrl,
@@ -42,18 +39,6 @@ class NewsArticleRepositoryImpl(
         return jpaRepository.save(entity).toDomain()
     }
 
-    override fun saveNew(title: String, content: String, sourceUrl: String, sourceName: String, publishedAt: Instant): NewsArticle {
-        val entity = NewsArticleJpaEntity(
-            title = title,
-            content = content,
-            sourceUrl = sourceUrl,
-            sourceName = sourceName,
-            publishedAt = publishedAt
-        )
-        return jpaRepository.save(entity).toDomain()
-    }
-
-    /** JpaEntity → ドメインモデル変換。id の null チェックはここで1箇所だけ行う。 */
     private fun NewsArticleJpaEntity.toDomain(): NewsArticle = NewsArticle(
         id = NewsArticleId(id ?: throw IllegalStateException("永続化済みNewsArticleのIDがnullです")),
         title = title,
