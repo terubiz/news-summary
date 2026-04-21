@@ -11,17 +11,27 @@
 ### model/
 | クラス | 役割 |
 |---|---|
-| `IndexData.kt` | 株価指数データエンティティ（集約ルート）。symbol, currentValue, changeAmount, changeRate, isStale |
+| `IndexDataId.kt` | 値オブジェクト。永続化済みエンティティのIDをnon-nullで保証 |
+| `IndexData.kt` | ドメインモデル（集約ルート）。JPAアノテーションなし。id: IndexDataId |
 
 ### repository/
 | クラス | 役割 |
 |---|---|
-| `IndexDataRepository.kt` | 指数データリポジトリポート。findLatestBySymbol, findLatestBySymbols |
+| `IndexDataRepository.kt` | ドメイン層ポート（インターフェース）。ドメインモデルのみを扱う |
 
 ### service/
 | クラス | 役割 |
 |---|---|
 | `IndexAnalyzerService.kt` | 指数分析ドメインサービスインターフェース。fetchLatestIndices(), getCachedIndices() |
+
+## インフラ層（index/infrastructure/）
+
+### persistence/
+| クラス | 役割 |
+|---|---|
+| `IndexDataJpaEntity.kt` | JPA用エンティティ（@Entity, id: Long? = null） |
+| `IndexDataJpaRepository.kt` | Spring Data JPA リポジトリ（JpaEntity を扱う） |
+| `IndexDataRepositoryImpl.kt` | IndexDataRepository実装。JpaEntity ↔ ドメインモデル変換。idのnullチェックはここで1箇所のみ |
 
 ## 機能別処理フロー
 
@@ -48,3 +58,4 @@ IndexController.getIndices() or NewsCollectorService（収集時に連携）
 
 - **isStale フラグ**: API失敗時にキャッシュデータを返す際、データが古いことをクライアントに明示する（要件2.3）
 - **シンボル別の最新データ取得**: `findLatestBySymbol` でシンボルごとに最新1件を取得するサブクエリを使用
+- **ドメインモデルとJPAエンティティの分離**: ドメインモデルはJPAアノテーションを持たない純粋なオブジェクト。JpaEntityはインフラ層に配置し、RepositoryImplで変換を行う
