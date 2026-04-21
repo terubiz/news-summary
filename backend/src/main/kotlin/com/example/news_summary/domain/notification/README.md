@@ -11,20 +11,34 @@
 ### model/
 | クラス | 役割 |
 |---|---|
-| `DeliveryChannel.kt` | 送信チャンネルエンティティ（集約ルート）。channelType, encryptedConfig, deliverySchedule, filterIndices |
-| `DeliveryLog.kt` | 送信ログエンティティ。status(SUCCESS/FAILED), retryCount, errorMessage |
+| `DeliveryChannelId.kt` | 値オブジェクト。永続化済みエンティティのIDをnon-nullで保証 |
+| `DeliveryChannel.kt` | ドメインモデル（集約ルート）。JPAアノテーションなし。id: DeliveryChannelId |
+| `DeliveryLogId.kt` | 値オブジェクト。永続化済みエンティティのIDをnon-nullで保証 |
+| `DeliveryLog.kt` | ドメインモデル。JPAアノテーションなし。id: DeliveryLogId |
 | `ChannelType.kt` | チャンネル種別列挙型（EMAIL/SLACK/LINE/DISCORD） |
 
 ### repository/
 | クラス | 役割 |
 |---|---|
-| `DeliveryChannelRepository.kt` | チャンネルリポジトリポート。findByUserIdAndEnabledTrue, findByUserId |
-| `DeliveryLogRepository.kt` | 送信ログリポジトリポート。findByChannelIdAndSummaryId, findRetryTargets |
+| `DeliveryChannelRepository.kt` | ドメイン層ポート（インターフェース）。ドメインモデルのみを扱う |
+| `DeliveryLogRepository.kt` | ドメイン層ポート（インターフェース）。ドメインモデルのみを扱う |
 
 ### service/
 | クラス | 役割 |
 |---|---|
 | `NotificationService.kt` | 通知ドメインサービスインターフェース。sendToChannel(), sendToChannels(), retryFailedDeliveries() |
+
+## インフラ層（notification/infrastructure/）
+
+### persistence/
+| クラス | 役割 |
+|---|---|
+| `DeliveryChannelJpaEntity.kt` | JPA用エンティティ（@Entity, id: Long? = null） |
+| `DeliveryLogJpaEntity.kt` | JPA用エンティティ |
+| `DeliveryChannelJpaRepository.kt` | Spring Data JPA リポジトリ（JpaEntity を扱う） |
+| `DeliveryLogJpaRepository.kt` | Spring Data JPA リポジトリ |
+| `DeliveryChannelRepositoryImpl.kt` | DeliveryChannelRepository実装。JpaEntity ↔ ドメインモデル変換。idのnullチェックはここで1箇所のみ |
+| `DeliveryLogRepositoryImpl.kt` | DeliveryLogRepository実装 |
 
 ## 機能別処理フロー
 
@@ -64,6 +78,7 @@ Scheduler → NotificationService.retryFailedDeliveries()
 - **暗号化設定（encryptedConfig）**: AES-256-GCM で暗号化してDB保存。復号は送信時のみ
 - **並行送信**: `sendToChannels()` で複数チャンネルへの送信を並行実行。1チャンネルの失敗が他に影響しない
 - **リトライ対象の取得**: `findRetryTargets()` で FAILED かつ retryCount < 3 のログを一括取得
+- **ドメインモデルとJPAエンティティの分離**: ドメインモデルはJPAアノテーションを持たない純粋なオブジェクト。JpaEntityはインフラ層に配置し、RepositoryImplで変換を行う
 
 ## プロパティテスト（予定）
 | テスト | 検証内容 |
