@@ -21,7 +21,7 @@ repositories {
     maven { url = uri("https://repo.spring.io/milestone") }
 }
 
-extra["springAiVersion"] = "1.0.0-M3"
+extra["springAiVersion"] = "1.0.0-M6"
 
 dependencies {
     // Spring Boot
@@ -33,8 +33,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-quartz")
 
-    // Spring AI
-    implementation("org.springframework.ai:spring-ai-openai-spring-boot-starter")
+    // Spring AI (Anthropic Claude)
+    implementation("org.springframework.ai:spring-ai-anthropic-spring-boot-starter")
 
     // Kotlin
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
