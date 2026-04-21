@@ -1,33 +1,35 @@
 package com.example.news_summary.domain.summary.repository
 
-import com.example.news_summary.domain.summary.model.SummaryStatus
 import com.example.news_summary.domain.summary.model.Summary
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.Pageable
-import org.springframework.data.jpa.repository.JpaRepository
-import org.springframework.data.jpa.repository.Query
-import org.springframework.stereotype.Repository
+import com.example.news_summary.domain.summary.model.SummaryId
+import com.example.news_summary.domain.summary.model.SummaryStatus
 import java.time.Instant
+import java.util.Optional
 
-@Repository
-interface SummaryRepository : JpaRepository<Summary, Long> {
-    fun findByUserIdOrderByGeneratedAtDesc(userId: Long, pageable: Pageable): Page<Summary>
-
-    fun findByUserIdAndGeneratedAtAfterOrderByGeneratedAtDesc(
-        userId: Long,
-        after: Instant
-    ): List<Summary>
-
-    fun findByUserIdAndStatusOrderByGeneratedAtDesc(
-        userId: Long,
-        status: SummaryStatus
-    ): List<Summary>
+/**
+ * 要約リポジトリ（ドメイン層ポート）
+ * ドメインモデルのみを扱う。JPA依存なし。
+ */
+interface SummaryRepository {
+    fun findById(id: SummaryId): Optional<Summary>
+    fun findByUserIdOrderByGeneratedAtDesc(userId: Long, page: Int, size: Int): PageResult<Summary>
+    fun findByUserIdAndGeneratedAtAfterOrderByGeneratedAtDesc(userId: Long, after: Instant): List<Summary>
+    fun findByUserIdAndStatusOrderByGeneratedAtDesc(userId: Long, status: SummaryStatus): List<Summary>
 
     /** キーワード検索（要約テキスト内） */
-    @Query("SELECT s FROM Summary s WHERE s.userId = :userId AND s.summaryText LIKE %:keyword%")
-    fun searchByKeyword(userId: Long, keyword: String, pageable: Pageable): Page<Summary>
+    fun searchByKeyword(userId: Long, keyword: String, page: Int, size: Int): PageResult<Summary>
 
     /** リトライ対象（FAILED かつ retryCount < 3）を取得 */
-    @Query("SELECT s FROM Summary s WHERE s.status = 'FAILED' AND s.retryCount < 3")
     fun findRetryTargets(): List<Summary>
+
+    fun save(summary: Summary): Summary
 }
+
+/** ページネーション結果 */
+data class PageResult<T>(
+    val content: List<T>,
+    val totalElements: Long,
+    val totalPages: Int,
+    val page: Int,
+    val size: Int
+)

@@ -11,8 +11,10 @@ AI要約生成・管理を担う境界コンテキスト。LLM API（Anthropic C
 ### model/
 | クラス | 役割 |
 |---|---|
-| `Summary.kt` | 要約エンティティ（集約ルート）。summaryText, supplementLevel, summaryMode, status, retryCount, sourceArticles(ManyToMany) |
-| `SummaryIndexImpact.kt` | 指数影響エンティティ。indexSymbol, impactDirection |
+| `SummaryId.kt` | 値オブジェクト。永続化済みエンティティのIDをnon-nullで保証 |
+| `Summary.kt` | ドメインモデル（集約ルート）。JPAアノテーションなし。id: SummaryId。sourceArticleIds で記事IDを保持 |
+| `SummaryIndexImpactId.kt` | 値オブジェクト。永続化済みエンティティのIDをnon-nullで保証 |
+| `SummaryIndexImpact.kt` | ドメインモデル。JPAアノテーションなし。id: SummaryIndexImpactId |
 | `SupplementLevel.kt` | 補足レベル列挙型（BEGINNER/INTERMEDIATE/ADVANCED） |
 | `SummaryMode.kt` | 文字数モード列挙型（SHORT:150字/STANDARD:300字/DETAILED:600字） |
 | `SummaryStatus.kt` | 要約ステータス列挙型（PENDING/IN_PROGRESS/COMPLETED/FAILED） |
@@ -21,13 +23,25 @@ AI要約生成・管理を担う境界コンテキスト。LLM API（Anthropic C
 ### repository/
 | クラス | 役割 |
 |---|---|
-| `SummaryRepository.kt` | 要約リポジトリポート。findByUserId, searchByKeyword, findRetryTargets |
-| `SummaryIndexImpactRepository.kt` | 影響リポジトリポート。findBySummaryId, findByIndexSymbol |
+| `SummaryRepository.kt` | ドメイン層ポート（インターフェース）。ドメインモデルのみを扱う |
+| `SummaryIndexImpactRepository.kt` | ドメイン層ポート（インターフェース）。ドメインモデルのみを扱う |
 
 ### service/
 | クラス | 役割 |
 |---|---|
 | `AISummarizerService.kt` | AI要約ドメインサービスインターフェース。summarize(), retryFailedSummaries() |
+
+## インフラ層（summary/infrastructure/）
+
+### persistence/
+| クラス | 役割 |
+|---|---|
+| `SummaryJpaEntity.kt` | JPA用エンティティ（@Entity, id: Long? = null）。sourceArticles(ManyToMany)を管理 |
+| `SummaryIndexImpactJpaEntity.kt` | JPA用エンティティ |
+| `SummaryJpaRepository.kt` | Spring Data JPA リポジトリ（JpaEntity を扱う） |
+| `SummaryIndexImpactJpaRepository.kt` | Spring Data JPA リポジトリ |
+| `SummaryRepositoryImpl.kt` | SummaryRepository実装。JpaEntity ↔ ドメインモデル変換。idのnullチェックはここで1箇所のみ |
+| `SummaryIndexImpactRepositoryImpl.kt` | SummaryIndexImpactRepository実装 |
 
 ## 機能別処理フロー
 
@@ -55,11 +69,11 @@ NewsCollectedEvent → AISummarizerService.summarize(articles, indices, settings
 Client → SummaryController.getSummaries(page, size, indexFilter, keyword)
   → SummaryRepository.findByUserId() or searchByKeyword()
   → SummaryIndexImpactRepository.findBySummaryId() [各要約の影響情報]
-  ← Page<SummaryDto>
+  ← PageResult<Summary>
 ```
 
 ## 関連クラス（他ドメイン）
-- `news/NewsArticle` — 要約元の記事（ManyToMany）
+- `news/NewsArticle` — 要約元の記事（ManyToMany、JpaEntity側で管理）
 - `index/IndexData` — 要約生成時に参照する指数データ
 - `settings/SummarySettings` — 補足レベル・文字数モード・分析観点の設定
 - `shared/SsePublisher` — 新規要約のリアルタイム通知
@@ -67,8 +81,9 @@ Client → SummaryController.getSummaries(page, size, indexFilter, keyword)
 ## 設計判断
 
 - **enum をsummaryドメインに配置**: SupplementLevel, SummaryMode, SummaryStatus, ImpactDirection は要約の振る舞いを定義するため、summary ドメインに所属
-- **ManyToMany（sourceArticles）**: 1つの要約が複数記事を参照し、1つの記事が複数要約に含まれる可能性がある
+- **ManyToMany（sourceArticles）**: JpaEntity側で管理。ドメインモデルではNewsArticleIdのSetとして保持
 - **リトライ対象の取得**: `findRetryTargets()` で FAILED かつ retryCount < 3 の要約を一括取得
+- **ドメインモデルとJPAエンティティの分離**: ドメインモデルはJPAアノテーションを持たない純粋なオブジェクト。JpaEntityはインフラ層に配置し、RepositoryImplで変換を行う
 
 ## プロパティテスト（予定）
 | テスト | 検証内容 |
