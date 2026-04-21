@@ -1,6 +1,6 @@
 spring:
   application:
-    name: economic-news-ai-summarizer
+    name: news-summary
   
   profiles:
     active: local
@@ -72,5 +72,5 @@ app:
 
 logging:
   level:
-    com.example.economicnews: INFO
+    com.example.news_summary: INFO
     org.springframework.security: DEBUG
