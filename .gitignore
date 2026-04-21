@@ -1,0 +1,41 @@
+# 依存関係
+node_modules/
+frontend/node_modules/
+backend/.gradle/
+backend/build/
+
+# 環境変数
+.env
+.env.local
+.env.*.local
+
+# ビルド成果物
+frontend/dist/
+frontend/build/
+backend/build/
+
+# ログ
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# テスト
+coverage/
+.nyc_output/
+
+# Docker
+.docker/
+
+# Spring Boot
+backend/src/main/resources/application-local.yml
+backend/src/main/resources/application-secret.yml
