@@ -1,0 +1,75 @@
+spring:
+  application:
+    name: economic-news-ai-summarizer
+  
+  profiles:
+    active: local
+  
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/economic_news}
+    username: ${DATABASE_USERNAME:appuser}
+    password: ${DATABASE_PASSWORD:apppassword}
+    driver-class-name: org.postgresql.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+  
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+  
+  mail:
+    host: ${SMTP_HOST:smtp.gmail.com}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+  
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      chat:
+        options:
+          model: gpt-4-turbo-preview
+          temperature: 0.7
+
+server:
+  port: 8080
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:changeme-this-is-a-very-long-secret-key-for-jwt-signing-at-least-256-bits}
+    access-token-expiration: 3600000  # 1 hour in milliseconds
+    refresh-token-expiration: 604800000  # 7 days in milliseconds
+  
+  encryption:
+    key: ${ENCRYPTION_KEY:changeme-this-is-a-32-byte-key}
+  
+  rate-limit:
+    requests-per-minute: 60
+    login-failure-threshold: 5
+    login-block-duration-minutes: 15
+  
+  news-api:
+    key: ${NEWS_API_KEY:}
+    base-url: https://newsapi.org/v2
+  
+  stock-api:
+    key: ${STOCK_API_KEY:}
+    base-url: https://www.alphavantage.co
+
+logging:
+  level:
+    com.example.economicnews: INFO
+    org.springframework.security: DEBUG
