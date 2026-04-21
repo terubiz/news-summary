@@ -6,14 +6,14 @@
 
 ## タスク
 
-- [-] 1. プロジェクト基盤のセットアップ
+- [x] 1. プロジェクト基盤のセットアップ
   - バックエンド: Spring Boot 3.x + Kotlin プロジェクト構造を作成する（`com.example.economicnews` パッケージ、`api/`・`domain/`・`infrastructure/`・`scheduler/` レイヤー）
   - フロントエンド: Vite + React 18 + TypeScript プロジェクトを作成し、TanStack Query・Zustand・React Router を追加する
   - Docker Compose ファイルを作成する（PostgreSQL 15、バックエンド、フロントエンドサービス）
   - `build.gradle.kts` に依存関係を追加する（Spring Boot Web・Security・Data JPA・Mail・AI・jjwt・jqwik・Testcontainers・WireMock・Flyway）
   - _要件: 7.1, 7.2, 8.1_
 
-- [ ] 2. データベーススキーマとJPAエンティティの実装
+- [-] 2. データベーススキーマとJPAエンティティの実装
   - [ ] 2.1 Flywayマイグレーションファイルを作成する
     - `V1__create_users.sql`・`V2__create_summary_settings.sql`・`V3__create_collection_schedules.sql`・`V4__create_news_articles.sql`・`V5__create_index_data.sql`・`V6__create_summaries.sql`・`V7__create_summary_relations.sql`・`V8__create_delivery_channels.sql`・`V9__create_delivery_logs.sql`・`V10__create_collection_logs.sql`・`V11__create_refresh_tokens.sql` を作成する
     - `source_url` カラムに UNIQUE 制約を追加する（重複排除のため）
