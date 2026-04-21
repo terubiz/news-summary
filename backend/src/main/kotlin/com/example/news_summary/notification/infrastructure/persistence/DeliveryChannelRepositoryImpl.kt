@@ -3,32 +3,27 @@ package com.example.news_summary.notification.infrastructure.persistence
 import com.example.news_summary.domain.notification.model.DeliveryChannel
 import com.example.news_summary.domain.notification.model.DeliveryChannelId
 import com.example.news_summary.domain.notification.repository.DeliveryChannelRepository
+import com.example.news_summary.domain.user.model.UserId
 import org.springframework.stereotype.Component
-import java.util.Optional
 
-/**
- * DeliveryChannelRepository のインフラ層実装。
- * JpaEntity ↔ ドメインモデルの変換を一元管理する。
- * id の null → DeliveryChannelId 変換はこのクラス内でのみ行われる。
- */
 @Component
 class DeliveryChannelRepositoryImpl(
     private val jpaRepository: DeliveryChannelJpaRepository
 ) : DeliveryChannelRepository {
 
-    override fun findById(id: DeliveryChannelId): Optional<DeliveryChannel> =
-        jpaRepository.findById(id.value).map { it.toDomain() }
+    override fun findById(id: DeliveryChannelId): DeliveryChannel? =
+        jpaRepository.findById(id.value).map { it.toDomain() }.orElse(null)
 
-    override fun findByUserIdAndEnabledTrue(userId: Long): List<DeliveryChannel> =
-        jpaRepository.findByUserIdAndEnabledTrue(userId).map { it.toDomain() }
+    override fun findByUserId(userId: UserId): List<DeliveryChannel> =
+        jpaRepository.findByUserId(userId.value).map { it.toDomain() }
 
-    override fun findByUserId(userId: Long): List<DeliveryChannel> =
-        jpaRepository.findByUserId(userId).map { it.toDomain() }
+    override fun findByUserIdAndEnabledTrue(userId: UserId): List<DeliveryChannel> =
+        jpaRepository.findByUserIdAndEnabledTrue(userId.value).map { it.toDomain() }
 
     override fun save(channel: DeliveryChannel): DeliveryChannel {
         val entity = DeliveryChannelJpaEntity(
-            id = channel.id.value,
-            userId = channel.userId,
+            id = channel.id?.value,
+            userId = channel.userId.value,
             channelType = channel.channelType,
             encryptedConfig = channel.encryptedConfig,
             deliverySchedule = channel.deliverySchedule,
@@ -39,10 +34,14 @@ class DeliveryChannelRepositoryImpl(
         return jpaRepository.save(entity).toDomain()
     }
 
+    override fun delete(id: DeliveryChannelId) {
+        jpaRepository.deleteById(id.value)
+    }
+
     /** JpaEntity → ドメインモデル変換。id の null チェックはここで1箇所だけ行う。 */
     private fun DeliveryChannelJpaEntity.toDomain(): DeliveryChannel = DeliveryChannel(
         id = DeliveryChannelId(id ?: throw IllegalStateException("永続化済みDeliveryChannelのIDがnullです")),
-        userId = userId,
+        userId = UserId(userId),
         channelType = channelType,
         encryptedConfig = encryptedConfig,
         deliverySchedule = deliverySchedule,
