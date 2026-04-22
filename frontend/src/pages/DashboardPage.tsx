@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { IndexTicker } from '../components/index/IndexTicker';
 import { SummaryList } from '../components/summary/SummaryList';
 import { useSseStream } from '../hooks/useSseStream';
 import { useAuth } from '../hooks/useAuth';
@@ -111,11 +110,6 @@ export default function DashboardPage() {
       ) : null}
 
       <div className="px-6 py-5">
-        {/* 株価指数ティッカー */}
-        <section style={{ marginBottom: '24px' }}>
-          <IndexTicker />
-        </section>
-
         {/* 要約一覧 */}
         <section>
           <h2

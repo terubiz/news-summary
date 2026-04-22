@@ -1,5 +1,4 @@
 import type { Summary, IndexImpact } from '../../hooks/useSummaries';
-import { getDisplayName } from '../../hooks/useIndexData';
 
 /** linear-ui-skills: ダークモードカード */
 
@@ -50,7 +49,7 @@ function ImpactBadge({ impact }: ImpactBadgeProps) {
         gap: '4px',
       }}
     >
-      <span>{getDisplayName(impact.indexSymbol)}</span>
+      <span>{impact.indexSymbol}</span>
       <span style={{ fontSize: '11px' }}>{label}</span>
     </span>
   );
