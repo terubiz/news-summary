@@ -35,7 +35,7 @@ class CollectNewsUseCase(
 
     @Transactional
     fun execute(userId: UserId): CollectionResult {
-        val rawArticles = newsApiClient.fetchLatestNews("economy OR 経済 OR 株式")
+        val rawArticles = newsApiClient.fetchLatestNews("economy stock market finance")
 
         var savedCount = 0
         var skippedCount = 0

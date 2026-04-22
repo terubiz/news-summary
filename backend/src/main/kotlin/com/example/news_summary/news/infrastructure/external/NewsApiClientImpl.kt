@@ -24,7 +24,7 @@ class NewsApiClientImpl(
 
     override fun fetchLatestNews(query: String): List<RawNewsArticle> {
         return try {
-            val url = "$baseUrl/everything?q=$query&language=ja&sortBy=publishedAt&pageSize=20&apiKey=$apiKey"
+            val url = "$baseUrl/everything?q=$query&language=en&sortBy=publishedAt&pageSize=20&apiKey=$apiKey"
             val response = restTemplate.getForObject(url, NewsApiResponse::class.java)
 
             response?.articles?.mapNotNull { article ->
