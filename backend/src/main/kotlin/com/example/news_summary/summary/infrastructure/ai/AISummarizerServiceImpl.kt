@@ -27,7 +27,8 @@ class AISummarizerServiceImpl(
     private val promptBuilder: SummaryPromptBuilder,
     private val summaryRepository: SummaryRepository,
     private val summaryIndexImpactRepository: SummaryIndexImpactRepository,
-    private val objectMapper: ObjectMapper
+    private val objectMapper: ObjectMapper,
+    private val ssePublisher: com.example.news_summary.domain.shared.service.SsePublisher
 ) : AISummarizerService {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -76,6 +77,10 @@ class AISummarizerServiceImpl(
             }
 
             logger.info("要約生成完了: summaryId=${summary.id.value}, userId=$userId, articles=${articles.size}件")
+
+            // SSEで要約生成完了を通知
+            ssePublisher.publishSummaryCreated(summary)
+
             summary
         } catch (e: Exception) {
             logger.error("要約生成失敗: userId=$userId, error=${e.message}", e)
