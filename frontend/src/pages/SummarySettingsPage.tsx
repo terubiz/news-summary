@@ -19,7 +19,7 @@ const MODE_LABELS: Record<string, string> = {
 };
 
 const INDEX_LABELS: Record<string, string> = {
-  N225: '日経225',
+  NKX: '日経225',
   SPX: 'S&P500',
   IXIC: 'NASDAQ',
   GDAXI: 'DAX',

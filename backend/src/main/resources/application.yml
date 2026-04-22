@@ -68,7 +68,7 @@ app:
   
   stock-api:
     key: ${STOCK_API_KEY:}
-    base-url: https://www.alphavantage.co
+    base-url: https://api.twelvedata.com
 
 management:
   endpoint:

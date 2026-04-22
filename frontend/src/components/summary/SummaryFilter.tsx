@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 
 const STOCK_INDICES = [
   { value: '', label: 'すべて' },
-  { value: 'N225', label: '日経225' },
+  { value: 'NKX', label: '日経225' },
   { value: 'SPX', label: 'S&P500' },
   { value: 'IXIC', label: 'NASDAQ' },
   { value: 'GDAXI', label: 'DAX' },

@@ -20,14 +20,14 @@ class JwtAuthenticationFilter(
         response: HttpServletResponse,
         filterChain: FilterChain
     ) {
-        val authHeader = request.getHeader("Authorization")
+        // Authorization ヘッダーまたはクエリパラメータからトークンを取得
+        // SSE (EventSource) は Authorization ヘッダーを送れないため、?token= で渡す
+        val token = extractToken(request)
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        if (token == null) {
             filterChain.doFilter(request, response)
             return
         }
-
-        val token = authHeader.removePrefix("Bearer ")
 
         try {
             if (jwtService.isTokenValid(token)) {
@@ -43,10 +43,19 @@ class JwtAuthenticationFilter(
                 SecurityContextHolder.getContext().authentication = auth
             }
         } catch (e: Exception) {
-            // 無効なトークンは無視してフィルタチェーンを継続
             logger.debug("JWT validation failed: ${e.message}")
         }
 
         filterChain.doFilter(request, response)
+    }
+
+    private fun extractToken(request: HttpServletRequest): String? {
+        // 1. Authorization ヘッダーから取得
+        val authHeader = request.getHeader("Authorization")
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.removePrefix("Bearer ")
+        }
+        // 2. クエリパラメータから取得（SSE用）
+        return request.getParameter("token")
     }
 }
