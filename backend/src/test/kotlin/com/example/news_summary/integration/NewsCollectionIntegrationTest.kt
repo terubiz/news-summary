@@ -2,6 +2,8 @@ package com.example.news_summary.integration
 
 import com.example.news_summary.domain.news.model.CollectionLog
 import com.example.news_summary.domain.news.model.CollectionLogId
+import com.example.news_summary.domain.news.model.NewCollectionLog
+import com.example.news_summary.domain.news.model.NewNewsArticle
 import com.example.news_summary.domain.news.model.NewsArticle
 import com.example.news_summary.domain.news.model.NewsArticleId
 import com.example.news_summary.domain.news.repository.CollectionLogRepository
@@ -55,16 +57,31 @@ class NewsCollectionIntegrationTest {
         whenever(articleRepository.existsBySourceUrl(any())).thenReturn(false)
         whenever(articleRepository.existsByTitle(any())).thenReturn(false)
 
-        // save は引数をそのまま返す（IDを付与）
+        // save は NewNewsArticle を受け取り、永続化済み NewsArticle を返す
         var articleIdCounter = 100L
-        whenever(articleRepository.save(any())).thenAnswer { invocation ->
-            val article = invocation.getArgument<NewsArticle>(0)
-            article.copy(id = NewsArticleId(articleIdCounter++), collectedAt = Instant.now())
+        whenever(articleRepository.save(any<NewNewsArticle>())).thenAnswer { invocation ->
+            val article = invocation.getArgument<NewNewsArticle>(0)
+            NewsArticle(
+                id = NewsArticleId(articleIdCounter++),
+                title = article.title,
+                content = article.content,
+                sourceUrl = article.sourceUrl,
+                sourceName = article.sourceName,
+                publishedAt = article.publishedAt,
+                collectedAt = Instant.now()
+            )
         }
 
-        whenever(collectionLogRepository.save(any())).thenAnswer { invocation ->
-            val log = invocation.getArgument<CollectionLog>(0)
-            log.copy(id = CollectionLogId(1L), executedAt = Instant.now())
+        whenever(collectionLogRepository.save(any<NewCollectionLog>())).thenAnswer { invocation ->
+            val log = invocation.getArgument<NewCollectionLog>(0)
+            CollectionLog(
+                id = CollectionLogId(1L),
+                userId = log.userId,
+                articleCount = log.articleCount,
+                status = log.status,
+                errorMessage = log.errorMessage,
+                executedAt = Instant.now()
+            )
         }
     }
 
@@ -92,10 +109,10 @@ class NewsCollectionIntegrationTest {
         assertEquals(0, result.errorCount)
 
         // DB保存が3回呼ばれた
-        verify(articleRepository, times(3)).save(any())
+        verify(articleRepository, times(3)).save(any<NewNewsArticle>())
 
         // 収集ログが記録された
-        verify(collectionLogRepository).save(argThat<CollectionLog> {
+        verify(collectionLogRepository).save(argThat<NewCollectionLog> {
             this.articleCount == 3 && this.status == "SUCCESS" && this.userId == testUserId
         })
 
@@ -175,7 +192,7 @@ class NewsCollectionIntegrationTest {
         assertEquals(0, result.errorCount)
 
         // 収集ログは記録される（0件でもログは残す）
-        verify(collectionLogRepository).save(argThat<CollectionLog> {
+        verify(collectionLogRepository).save(argThat<NewCollectionLog> {
             this.articleCount == 0 && this.status == "SUCCESS"
         })
 
@@ -194,11 +211,19 @@ class NewsCollectionIntegrationTest {
 
         // 2件目の保存で例外
         var callCount = 0
-        whenever(articleRepository.save(any())).thenAnswer { invocation ->
+        whenever(articleRepository.save(any<NewNewsArticle>())).thenAnswer { invocation ->
             callCount++
             if (callCount == 2) throw RuntimeException("DB接続エラー")
-            val article = invocation.getArgument<NewsArticle>(0)
-            article.copy(id = NewsArticleId(100L), collectedAt = Instant.now())
+            val article = invocation.getArgument<NewNewsArticle>(0)
+            NewsArticle(
+                id = NewsArticleId(100L),
+                title = article.title,
+                content = article.content,
+                sourceUrl = article.sourceUrl,
+                sourceName = article.sourceName,
+                publishedAt = article.publishedAt,
+                collectedAt = Instant.now()
+            )
         }
 
         val result = useCase.execute(testUserId)
@@ -209,7 +234,7 @@ class NewsCollectionIntegrationTest {
         assertTrue(result.errors.any { it.contains("DB接続エラー") })
 
         // 収集ログのステータスはPARTIAL
-        verify(collectionLogRepository).save(argThat<CollectionLog> {
+        verify(collectionLogRepository).save(argThat<NewCollectionLog> {
             this.status == "PARTIAL" && this.articleCount == 1
         })
     }

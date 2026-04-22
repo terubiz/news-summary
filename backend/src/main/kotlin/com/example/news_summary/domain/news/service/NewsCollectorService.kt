@@ -1,6 +1,6 @@
 package com.example.news_summary.domain.news.service
 
-import com.example.news_summary.domain.news.model.NewsArticle
+import com.example.news_summary.domain.news.model.NewNewsArticle
 
 /**
  * ニュース収集ドメインサービス
@@ -17,7 +17,7 @@ interface NewsCollectorService {
     /**
      * 記事が重複しているか判定する（URL または タイトルの一致）
      */
-    fun isDuplicate(article: NewsArticle): Boolean
+    fun isDuplicate(article: NewNewsArticle): Boolean
 }
 
 data class CollectionResult(

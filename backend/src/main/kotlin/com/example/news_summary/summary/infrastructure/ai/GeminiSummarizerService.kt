@@ -52,7 +52,7 @@ class GeminiSummarizerService(
         userId: Long
     ): Summary {
         val prompt = promptBuilder.build(articles, indexNames, settings)
-        val articleIds = articles.mapNotNull { it.id }.toSet()
+        val articleIds = articles.map { it.id }.toSet()
 
         return try {
             val responseText = callGeminiWithSearchGrounding(prompt)

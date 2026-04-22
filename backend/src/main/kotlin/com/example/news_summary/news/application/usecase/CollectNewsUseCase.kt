@@ -1,7 +1,7 @@
 package com.example.news_summary.news.application.usecase
 
-import com.example.news_summary.domain.news.model.CollectionLog
-import com.example.news_summary.domain.news.model.NewsArticle
+import com.example.news_summary.domain.news.model.NewCollectionLog
+import com.example.news_summary.domain.news.model.NewNewsArticle
 import com.example.news_summary.domain.news.repository.CollectionLogRepository
 import com.example.news_summary.domain.news.repository.NewsArticleRepository
 import com.example.news_summary.domain.news.service.CollectionResult
@@ -51,7 +51,7 @@ class CollectNewsUseCase(
                     continue
                 }
 
-                val article = NewsArticle(
+                val article = NewNewsArticle(
                     title = raw.title,
                     content = raw.content,
                     sourceUrl = raw.sourceUrl,
@@ -59,7 +59,7 @@ class CollectNewsUseCase(
                     publishedAt = parseInstant(raw.publishedAt)
                 )
                 val saved = articleRepository.save(article)
-                saved.id?.let { savedArticleIds.add(it) }
+                savedArticleIds.add(saved.id)
                 savedCount++
             } catch (e: Exception) {
                 logger.error("記事保存失敗: ${raw.title} - ${e.message}")
@@ -70,7 +70,7 @@ class CollectNewsUseCase(
         // 収集ログ記録（要件1.6）
         val status = if (errors.isEmpty()) "SUCCESS" else "PARTIAL"
         collectionLogRepository.save(
-            CollectionLog(
+            NewCollectionLog(
                 userId = userId,
                 articleCount = savedCount,
                 status = status,

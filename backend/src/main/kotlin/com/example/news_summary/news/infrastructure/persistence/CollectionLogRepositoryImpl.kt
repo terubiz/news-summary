@@ -2,6 +2,7 @@ package com.example.news_summary.news.infrastructure.persistence
 
 import com.example.news_summary.domain.news.model.CollectionLog
 import com.example.news_summary.domain.news.model.CollectionLogId
+import com.example.news_summary.domain.news.model.NewCollectionLog
 import com.example.news_summary.domain.news.repository.CollectionLogRepository
 import com.example.news_summary.domain.user.model.UserId
 import org.springframework.stereotype.Component
@@ -14,9 +15,8 @@ class CollectionLogRepositoryImpl(
     override fun findByUserIdOrderByExecutedAtDesc(userId: UserId): List<CollectionLog> =
         jpaRepository.findByUserIdOrderByExecutedAtDesc(userId.value).map { it.toDomain() }
 
-    override fun save(log: CollectionLog): CollectionLog {
+    override fun save(log: NewCollectionLog): CollectionLog {
         val entity = CollectionLogJpaEntity(
-            id = log.id?.value,
             userId = log.userId.value,
             articleCount = log.articleCount,
             status = log.status,
