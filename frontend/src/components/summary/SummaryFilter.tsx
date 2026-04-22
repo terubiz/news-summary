@@ -23,21 +23,17 @@ export function SummaryFilter({
   onIndexChange,
   onKeywordChange,
 }: SummaryFilterProps) {
-  const [localKeyword, setLocalKeyword] = useState(keyword);
+  const [localKeyword, setLocalKeyword] = useState('');
+  // keyword propが外部から変更された場合に同期
+  const prevKeywordRef = useState(keyword)[0];
+  if (prevKeywordRef !== keyword && localKeyword !== keyword) {
+    setLocalKeyword(keyword);
+  }
 
   const handleKeywordSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
       onKeywordChange(localKeyword);
-    },
-    [localKeyword, onKeywordChange]
-  );
-
-  const handleKeywordKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'Enter') {
-        onKeywordChange(localKeyword);
-      }
     },
     [localKeyword, onKeywordChange]
   );
@@ -75,7 +71,6 @@ export function SummaryFilter({
           type="search"
           value={localKeyword}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocalKeyword(e.target.value)}
-          onKeyDown={handleKeywordKeyDown}
           placeholder="キーワード検索..."
           className="w-full px-3 py-2 outline-none"
           style={{

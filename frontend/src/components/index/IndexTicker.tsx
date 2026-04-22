@@ -58,7 +58,7 @@ function IndexTickerItem({ data }: IndexTickerItemProps) {
         {data.isStale ? (
           <span
             style={{
-              fontSize: '10px',
+              fontSize: '12px',
               color: '#FAE6C2',
               backgroundColor: 'rgba(250, 230, 194, 0.15)',
               padding: '1px 4px',

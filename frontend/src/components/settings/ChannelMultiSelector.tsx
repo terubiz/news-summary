@@ -64,6 +64,7 @@ export function ChannelMultiSelector({ summaryId, onClose }: ChannelMultiSelecto
         zIndex: 50,
       }}
       onClick={onClose}
+      onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
       role="dialog"
       aria-modal="true"
       aria-label="送信先チャンネルを選択"

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useReducer, useCallback, useEffect } from 'react';
 import type { SummarySettings, UpdateSummarySettingsRequest } from '../../hooks/useSettings';
 
 /** vercel-ui-skills: ライトモード設定フォーム */
@@ -34,6 +34,79 @@ const SUMMARY_MODES = [
   { value: 'DETAILED' as const, label: '詳細', description: '600文字以内' },
 ];
 
+// --- useReducer で関連する状態をまとめる ---
+
+interface FormState {
+  selectedIndices: string[];
+  perspectives: string[];
+  supplementLevel: SummarySettings['supplementLevel'];
+  summaryMode: SummarySettings['summaryMode'];
+  customPerspective: string;
+}
+
+type FormAction =
+  | { type: 'TOGGLE_INDEX'; value: string }
+  | { type: 'TOGGLE_PERSPECTIVE'; value: string }
+  | { type: 'ADD_CUSTOM_PERSPECTIVE' }
+  | { type: 'SET_CUSTOM_PERSPECTIVE'; value: string }
+  | { type: 'SET_SUPPLEMENT_LEVEL'; value: FormState['supplementLevel'] }
+  | { type: 'SET_SUMMARY_MODE'; value: FormState['summaryMode'] }
+  | { type: 'RESET'; settings: SummarySettings };
+
+function formReducer(state: FormState, action: FormAction): FormState {
+  switch (action.type) {
+    case 'TOGGLE_INDEX':
+      return {
+        ...state,
+        selectedIndices: state.selectedIndices.includes(action.value)
+          ? state.selectedIndices.filter((v) => v !== action.value)
+          : [...state.selectedIndices, action.value],
+      };
+    case 'TOGGLE_PERSPECTIVE':
+      return {
+        ...state,
+        perspectives: state.perspectives.includes(action.value)
+          ? state.perspectives.filter((v) => v !== action.value)
+          : [...state.perspectives, action.value],
+      };
+    case 'ADD_CUSTOM_PERSPECTIVE': {
+      const trimmed = state.customPerspective.trim();
+      if (!trimmed || state.perspectives.includes(trimmed)) return state;
+      return {
+        ...state,
+        perspectives: [...state.perspectives, trimmed],
+        customPerspective: '',
+      };
+    }
+    case 'SET_CUSTOM_PERSPECTIVE':
+      return { ...state, customPerspective: action.value };
+    case 'SET_SUPPLEMENT_LEVEL':
+      return { ...state, supplementLevel: action.value };
+    case 'SET_SUMMARY_MODE':
+      return { ...state, summaryMode: action.value };
+    case 'RESET':
+      return {
+        selectedIndices: action.settings.selectedIndices,
+        perspectives: action.settings.analysisPerspectives,
+        supplementLevel: action.settings.supplementLevel,
+        summaryMode: action.settings.summaryMode,
+        customPerspective: '',
+      };
+    default:
+      return state;
+  }
+}
+
+function initFormState(settings: SummarySettings): FormState {
+  return {
+    selectedIndices: settings.selectedIndices,
+    perspectives: settings.analysisPerspectives,
+    supplementLevel: settings.supplementLevel,
+    summaryMode: settings.summaryMode,
+    customPerspective: '',
+  };
+}
+
 interface SummarySettingsFormProps {
   settings: SummarySettings;
   onSubmit: (data: UpdateSummarySettingsRequest) => void;
@@ -41,50 +114,23 @@ interface SummarySettingsFormProps {
 }
 
 export function SummarySettingsForm({ settings, onSubmit, isSubmitting }: SummarySettingsFormProps) {
-  const [selectedIndices, setSelectedIndices] = useState<string[]>(settings.selectedIndices);
-  const [perspectives, setPerspectives] = useState<string[]>(settings.analysisPerspectives);
-  const [supplementLevel, setSupplementLevel] = useState(settings.supplementLevel);
-  const [summaryMode, setSummaryMode] = useState(settings.summaryMode);
-  const [customPerspective, setCustomPerspective] = useState('');
+  const [state, dispatch] = useReducer(formReducer, settings, initFormState);
 
   useEffect(() => {
-    setSelectedIndices(settings.selectedIndices);
-    setPerspectives(settings.analysisPerspectives);
-    setSupplementLevel(settings.supplementLevel);
-    setSummaryMode(settings.summaryMode);
+    dispatch({ type: 'RESET', settings });
   }, [settings]);
-
-  const toggleIndex = useCallback((value: string) => {
-    setSelectedIndices((prev) =>
-      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
-    );
-  }, []);
-
-  const togglePerspective = useCallback((value: string) => {
-    setPerspectives((prev) =>
-      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
-    );
-  }, []);
-
-  const addCustomPerspective = useCallback(() => {
-    const trimmed = customPerspective.trim();
-    if (trimmed && !perspectives.includes(trimmed)) {
-      setPerspectives((prev) => [...prev, trimmed]);
-      setCustomPerspective('');
-    }
-  }, [customPerspective, perspectives]);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
       onSubmit({
-        selectedIndices,
-        analysisPerspectives: perspectives,
-        supplementLevel,
-        summaryMode,
+        selectedIndices: state.selectedIndices,
+        analysisPerspectives: state.perspectives,
+        supplementLevel: state.supplementLevel,
+        summaryMode: state.summaryMode,
       });
     },
-    [selectedIndices, perspectives, supplementLevel, summaryMode, onSubmit]
+    [state, onSubmit]
   );
 
   const inputStyle = {
@@ -109,18 +155,18 @@ export function SummarySettingsForm({ settings, onSubmit, isSubmitting }: Summar
             <button
               key={idx.value}
               type="button"
-              onClick={() => toggleIndex(idx.value)}
+              onClick={() => dispatch({ type: 'TOGGLE_INDEX', value: idx.value })}
               style={{
                 fontSize: '13px',
-                fontWeight: selectedIndices.includes(idx.value) ? 600 : 400,
-                color: selectedIndices.includes(idx.value) ? '#FFFFFF' : '#797979',
-                backgroundColor: selectedIndices.includes(idx.value) ? '#000001' : '#FFFFFF',
+                fontWeight: state.selectedIndices.includes(idx.value) ? 600 : 400,
+                color: state.selectedIndices.includes(idx.value) ? '#FFFFFF' : '#797979',
+                backgroundColor: state.selectedIndices.includes(idx.value) ? '#000001' : '#FFFFFF',
                 padding: '6px 14px',
                 borderRadius: '6px',
-                border: `1px solid ${selectedIndices.includes(idx.value) ? '#000001' : '#C8CDD1'}`,
+                border: `1px solid ${state.selectedIndices.includes(idx.value) ? '#000001' : '#C8CDD1'}`,
                 cursor: 'pointer',
               }}
-              aria-pressed={selectedIndices.includes(idx.value)}
+              aria-pressed={state.selectedIndices.includes(idx.value)}
             >
               {idx.label}
             </button>
@@ -142,18 +188,18 @@ export function SummarySettingsForm({ settings, onSubmit, isSubmitting }: Summar
               <button
                 key={p.name}
                 type="button"
-                onClick={() => togglePerspective(p.name)}
+                onClick={() => dispatch({ type: 'TOGGLE_PERSPECTIVE', value: p.name })}
                 style={{
                   fontSize: '12px',
-                  fontWeight: perspectives.includes(p.name) ? 600 : 400,
-                  color: perspectives.includes(p.name) ? '#FFFFFF' : '#797979',
-                  backgroundColor: perspectives.includes(p.name) ? '#000001' : '#FFFFFF',
+                  fontWeight: state.perspectives.includes(p.name) ? 600 : 400,
+                  color: state.perspectives.includes(p.name) ? '#FFFFFF' : '#797979',
+                  backgroundColor: state.perspectives.includes(p.name) ? '#000001' : '#FFFFFF',
                   padding: '5px 12px',
                   borderRadius: '6px',
-                  border: `1px solid ${perspectives.includes(p.name) ? '#000001' : '#C8CDD1'}`,
+                  border: `1px solid ${state.perspectives.includes(p.name) ? '#000001' : '#C8CDD1'}`,
                   cursor: 'pointer',
                 }}
-                aria-pressed={perspectives.includes(p.name)}
+                aria-pressed={state.perspectives.includes(p.name)}
               >
                 {p.displayName}
               </button>
@@ -163,21 +209,24 @@ export function SummarySettingsForm({ settings, onSubmit, isSubmitting }: Summar
         <div className="flex" style={{ gap: '8px' }}>
           <input
             type="text"
-            value={customPerspective}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomPerspective(e.target.value)}
+            value={state.customPerspective}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              dispatch({ type: 'SET_CUSTOM_PERSPECTIVE', value: e.target.value })
+            }
             placeholder="カスタム観点を追加..."
             className="flex-1 px-3 py-2 outline-none"
             style={inputStyle}
+            aria-label="カスタム分析観点"
             onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
-                addCustomPerspective();
+                dispatch({ type: 'ADD_CUSTOM_PERSPECTIVE' });
               }
             }}
           />
           <button
             type="button"
-            onClick={addCustomPerspective}
+            onClick={() => dispatch({ type: 'ADD_CUSTOM_PERSPECTIVE' })}
             style={{
               fontSize: '13px',
               fontWeight: 500,
@@ -193,7 +242,7 @@ export function SummarySettingsForm({ settings, onSubmit, isSubmitting }: Summar
           </button>
         </div>
         {/* カスタム観点表示 */}
-        {perspectives
+        {state.perspectives
           .filter(
             (p) => !settings.availablePerspectives.some((ap) => ap.name === p)
           )
@@ -213,9 +262,9 @@ export function SummarySettingsForm({ settings, onSubmit, isSubmitting }: Summar
               {p}
               <button
                 type="button"
-                onClick={() => togglePerspective(p)}
+                onClick={() => dispatch({ type: 'TOGGLE_PERSPECTIVE', value: p })}
                 style={{
-                  fontSize: '10px',
+                  fontSize: '12px',
                   color: '#797979',
                   background: 'none',
                   border: 'none',
@@ -244,16 +293,16 @@ export function SummarySettingsForm({ settings, onSubmit, isSubmitting }: Summar
               className="flex items-start cursor-pointer p-3"
               style={{
                 borderRadius: '6px',
-                border: `1px solid ${supplementLevel === level.value ? '#000001' : '#C8CDD1'}`,
-                backgroundColor: supplementLevel === level.value ? '#F5F5F5' : '#FFFFFF',
+                border: `1px solid ${state.supplementLevel === level.value ? '#000001' : '#C8CDD1'}`,
+                backgroundColor: state.supplementLevel === level.value ? '#F5F5F5' : '#FFFFFF',
               }}
             >
               <input
                 type="radio"
                 name="supplementLevel"
                 value={level.value}
-                checked={supplementLevel === level.value}
-                onChange={() => setSupplementLevel(level.value)}
+                checked={state.supplementLevel === level.value}
+                onChange={() => dispatch({ type: 'SET_SUPPLEMENT_LEVEL', value: level.value })}
                 className="mt-0.5 mr-3"
               />
               <div>
@@ -281,23 +330,23 @@ export function SummarySettingsForm({ settings, onSubmit, isSubmitting }: Summar
             <button
               key={mode.value}
               type="button"
-              onClick={() => setSummaryMode(mode.value)}
+              onClick={() => dispatch({ type: 'SET_SUMMARY_MODE', value: mode.value })}
               style={{
                 flex: 1,
                 fontSize: '13px',
-                fontWeight: summaryMode === mode.value ? 600 : 400,
-                color: summaryMode === mode.value ? '#FFFFFF' : '#797979',
-                backgroundColor: summaryMode === mode.value ? '#000001' : '#FFFFFF',
+                fontWeight: state.summaryMode === mode.value ? 600 : 400,
+                color: state.summaryMode === mode.value ? '#FFFFFF' : '#797979',
+                backgroundColor: state.summaryMode === mode.value ? '#000001' : '#FFFFFF',
                 padding: '10px 12px',
                 borderRadius: '6px',
-                border: `1px solid ${summaryMode === mode.value ? '#000001' : '#C8CDD1'}`,
+                border: `1px solid ${state.summaryMode === mode.value ? '#000001' : '#C8CDD1'}`,
                 cursor: 'pointer',
                 textAlign: 'center' as const,
               }}
-              aria-pressed={summaryMode === mode.value}
+              aria-pressed={state.summaryMode === mode.value}
             >
               <div>{mode.label}</div>
-              <div style={{ fontSize: '11px', marginTop: '2px', opacity: 0.7 }}>
+              <div style={{ fontSize: '12px', marginTop: '2px', opacity: 0.7 }}>
                 {mode.description}
               </div>
             </button>

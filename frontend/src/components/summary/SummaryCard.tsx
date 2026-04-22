@@ -51,7 +51,7 @@ function ImpactBadge({ impact }: ImpactBadgeProps) {
       }}
     >
       <span>{getDisplayName(impact.indexSymbol)}</span>
-      <span style={{ fontSize: '10px' }}>{label}</span>
+      <span style={{ fontSize: '11px' }}>{label}</span>
     </span>
   );
 }
