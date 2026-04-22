@@ -33,8 +33,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-quartz")
 
-    // Spring AI (Anthropic Claude)
-    implementation("org.springframework.ai:spring-ai-anthropic-spring-boot-starter")
+    // Spring AI (OpenAI互換 - Google Gemini無料枠で利用)
+    implementation("org.springframework.ai:spring-ai-openai-spring-boot-starter")
 
     // Kotlin
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")

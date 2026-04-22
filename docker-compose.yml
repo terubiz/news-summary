@@ -29,7 +29,7 @@ services:
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-apppassword}
       JWT_SECRET: ${JWT_SECRET:-changeme-this-is-a-very-long-secret-key-for-jwt-signing-at-least-256-bits}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-changeme-this-is-a-32-byte-key!}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GOOGLE_GENAI_API_KEY: ${GOOGLE_GENAI_API_KEY:-}
       NEWS_API_KEY: ${NEWS_API_KEY:-}
       STOCK_API_KEY: ${STOCK_API_KEY:-}
       SPRING_PROFILES_ACTIVE: docker
