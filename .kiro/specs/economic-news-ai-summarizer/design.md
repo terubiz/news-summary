@@ -17,7 +17,7 @@
 |---|---|
 | フロントエンド | React 18 + TypeScript, Vite, TanStack Query, Zustand |
 | バックエンド | Kotlin 1.9 + Spring Boot 3.x |
-| AI統合 | Spring AI (OpenAI ChatClient) |
+| AI統合 | Spring AI (Anthropic Claude Sonnet ChatClient) |
 | データベース | PostgreSQL 15 |
 | スケジューリング | Spring `@Scheduled` + Quartz Scheduler |
 | リアルタイム通知 | Server-Sent Events (SSE) |
@@ -164,30 +164,227 @@ sequenceDiagram
     NotifService->>DB: saveDeliveryLog()
 ```
 
-### レイヤー構成（バックエンド）
+### DDD（ドメイン駆動設計）構成
+
+本プロジェクトはDDDの戦略的・戦術的パターンを採用する。ドメインロジックをインフラ・UIから分離し、ビジネスルールをドメイン層に集約する。
+
+#### 境界づけられたコンテキスト（Bounded Context）
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  News Context          │  Summary Context   │  Notification     │
+│  ニュース収集・管理     │  AI要約・設定管理  │  Context          │
+│                        │                    │  通知送信・管理   │
+├─────────────────────────────────────────────────────────────────┤
+│  Index Context         │  User Context                          │
+│  株価指数取得・管理     │  認証・認可・ユーザー管理              │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### パッケージ構成（DDD レイヤー）
 
 ```
 com.example.economicnews
-├── api/                    # REST コントローラ・SSE エンドポイント
+│
+├── news/                           # News Context
+│   ├── domain/
+│   │   ├── model/
+│   │   │   ├── NewsArticle.kt      # エンティティ（集約ルート）
+│   │   │   ├── NewsArticleId.kt    # 値オブジェクト
+│   │   │   └── CollectionLog.kt    # エンティティ
+│   │   ├── repository/
+│   │   │   └── NewsArticleRepository.kt  # リポジトリインターフェース
+│   │   └── service/
+│   │       └── NewsCollectorService.kt   # ドメインサービス
+│   ├── application/
+│   │   └── usecase/
+│   │       └── CollectNewsUseCase.kt     # アプリケーションサービス
+│   └── infrastructure/
+│       ├── persistence/
+│       │   ├── NewsArticleJpaEntity.kt
+│       │   └── NewsArticleJpaRepository.kt
+│       └── external/
+│           └── NewsApiClient.kt          # 外部APIアダプタ
+│
+├── summary/                        # Summary Context
+│   ├── domain/
+│   │   ├── model/
+│   │   │   ├── Summary.kt          # エンティティ（集約ルート）
+│   │   │   ├── SummaryId.kt        # 値オブジェクト
+│   │   │   ├── SummarySettings.kt  # 値オブジェクト
+│   │   │   ├── SupplementLevel.kt  # 列挙型
+│   │   │   ├── SummaryMode.kt      # 列挙型
+│   │   │   ├── AnalysisPerspective.kt  # 列挙型
+│   │   │   └── SummaryIndexImpact.kt   # 値オブジェクト
+│   │   ├── repository/
+│   │   │   └── SummaryRepository.kt
+│   │   └── service/
+│   │       ├── AISummarizerService.kt   # ドメインサービス
+│   │       └── SummaryPromptBuilder.kt  # ドメインサービス
+│   ├── application/
+│   │   └── usecase/
+│   │       ├── GenerateSummaryUseCase.kt
+│   │       └── GetSummariesUseCase.kt
+│   └── infrastructure/
+│       ├── persistence/
+│       │   ├── SummaryJpaEntity.kt
+│       │   └── SummaryJpaRepository.kt
+│       └── ai/
+│           └── AnthropicChatClient.kt   # Spring AI アダプタ
+│
+├── index/                          # Index Context
+│   ├── domain/
+│   │   ├── model/
+│   │   │   ├── IndexData.kt        # エンティティ（集約ルート）
+│   │   │   └── StockSymbol.kt      # 値オブジェクト
+│   │   ├── repository/
+│   │   │   └── IndexDataRepository.kt
+│   │   └── service/
+│   │       └── IndexAnalyzerService.kt  # ドメインサービス
+│   ├── application/
+│   │   └── usecase/
+│   │       └── FetchIndexDataUseCase.kt
+│   └── infrastructure/
+│       ├── persistence/
+│       │   └── IndexDataJpaRepository.kt
+│       └── external/
+│           └── StockApiClient.kt
+│
+├── notification/                   # Notification Context
+│   ├── domain/
+│   │   ├── model/
+│   │   │   ├── DeliveryChannel.kt  # エンティティ（集約ルート）
+│   │   │   ├── DeliveryChannelId.kt
+│   │   │   ├── ChannelType.kt      # 列挙型（EMAIL/SLACK/LINE/DISCORD）
+│   │   │   ├── ChannelConfig.kt    # 値オブジェクト（暗号化設定）
+│   │   │   └── DeliveryLog.kt      # エンティティ
+│   │   ├── repository/
+│   │   │   ├── DeliveryChannelRepository.kt
+│   │   │   └── DeliveryLogRepository.kt
+│   │   └── service/
+│   │       └── NotificationService.kt   # ドメインサービス
+│   ├── application/
+│   │   └── usecase/
+│   │       ├── SendNotificationUseCase.kt
+│   │       └── ManageChannelUseCase.kt
+│   └── infrastructure/
+│       ├── persistence/
+│       │   └── DeliveryChannelJpaRepository.kt
+│       └── sender/
+│           ├── EmailNotificationAdapter.kt
+│           ├── SlackNotificationAdapter.kt
+│           ├── LineNotificationAdapter.kt
+│           └── DiscordNotificationAdapter.kt
+│
+├── user/                           # User Context
+│   ├── domain/
+│   │   ├── model/
+│   │   │   ├── User.kt             # エンティティ（集約ルート）
+│   │   │   ├── UserId.kt           # 値オブジェクト
+│   │   │   └── RefreshToken.kt     # エンティティ
+│   │   ├── repository/
+│   │   │   ├── UserRepository.kt
+│   │   │   └── RefreshTokenRepository.kt
+│   │   └── service/
+│   │       └── UserDomainService.kt
+│   ├── application/
+│   │   └── usecase/
+│   │       ├── RegisterUserUseCase.kt
+│   │       └── AuthenticateUserUseCase.kt
+│   └── infrastructure/
+│       ├── persistence/
+│       │   └── UserJpaRepository.kt
+│       └── security/
+│           ├── JwtService.kt
+│           └── EncryptionService.kt
+│
+├── shared/                         # 共有カーネル
+│   ├── domain/
+│   │   └── event/
+│   │       ├── DomainEvent.kt      # ドメインイベント基底
+│   │       └── NewsCollectedEvent.kt
+│   └── infrastructure/
+│       └── sse/
+│           └── SsePublisher.kt
+│
+├── api/                            # プレゼンテーション層（REST）
 │   ├── auth/
+│   │   └── AuthController.kt
 │   ├── summary/
+│   │   └── SummaryController.kt
 │   ├── settings/
+│   │   └── SettingsController.kt
 │   ├── notification/
-│   └── sse/
-├── domain/                 # ドメインモデル・サービス
-│   ├── news/
+│   │   └── NotificationController.kt
 │   ├── index/
-│   ├── summary/
-│   ├── notification/
-│   └── user/
-├── infrastructure/         # 外部サービス・DB アダプタ
-│   ├── news/               # NewsAPI クライアント
-│   ├── stock/              # Alpha Vantage クライアント
-│   ├── ai/                 # Spring AI / OpenAI クライアント
-│   ├── notification/       # Email / Slack / LINE / Discord 送信
-│   └── persistence/        # JPA リポジトリ
-└── scheduler/              # Spring Scheduled / Quartz ジョブ
+│   │   └── IndexController.kt
+│   └── sse/
+│       └── SseController.kt
+│
+└── scheduler/                      # スケジューラ層
+    ├── NewsCollectionJob.kt
+    └── NotificationDeliveryJob.kt
 ```
+
+#### DDDの主要パターン適用方針
+
+| パターン | 適用箇所 | 説明 |
+|---|---|---|
+| **集約（Aggregate）** | `NewsArticle`・`Summary`・`DeliveryChannel`・`User` | 各コンテキストの集約ルート。トランザクション境界を定義 |
+| **値オブジェクト（Value Object）** | `SummarySettings`・`StockSymbol`・`ChannelConfig`・`SummaryIndexImpact` | 不変・同一性なし。ビジネスルールをカプセル化 |
+| **ドメインサービス（Domain Service）** | `NewsCollectorService`・`AISummarizerService`・`NotificationService` | 複数集約にまたがるビジネスロジック |
+| **アプリケーションサービス（Use Case）** | `CollectNewsUseCase`・`GenerateSummaryUseCase` 等 | ユースケース単位のオーケストレーション。トランザクション管理 |
+| **リポジトリ（Repository）** | 各コンテキストの `*Repository` インターフェース | ドメイン層に定義、インフラ層で実装（依存性逆転） |
+| **ドメインイベント（Domain Event）** | `NewsCollectedEvent` | ニュース収集完了 → AI要約トリガーの疎結合連携 |
+| **アンチコラプションレイヤー（ACL）** | `NewsApiClient`・`StockApiClient`・`AnthropicChatClient` | 外部APIをドメインモデルに変換するアダプタ |
+
+### レイヤー間の依存関係
+
+```
+プレゼンテーション層（api/）
+        ↓ 依存
+アプリケーション層（application/usecase/）
+        ↓ 依存
+ドメイン層（domain/model, domain/service, domain/repository）
+        ↑ 実装（依存性逆転）
+インフラ層（infrastructure/）
+```
+
+- ドメイン層は他のどの層にも依存しない
+- インフラ層はドメイン層のリポジトリインターフェースを実装する
+- アプリケーション層はドメインサービスとリポジトリを組み合わせてユースケースを実現する
+
+### ドメインドキュメント方針
+
+各ドメインディレクトリに `README.md` を配置し、以下の内容を記録する。実装が進むたびに対応するmdファイルを更新し、コードと設計ドキュメントの乖離を防ぐ。
+
+#### 配置場所
+
+```
+backend/src/main/kotlin/com/example/economicnews/domain/
+├── user/README.md
+├── news/README.md
+├── index/README.md
+├── summary/README.md
+├── notification/README.md
+└── settings/README.md
+```
+
+#### 記載内容
+
+各 `README.md` には以下を記載する：
+
+1. **ドメイン概要** — 境界コンテキストの責務と対応する要件番号
+2. **クラス一覧** — model/repository/service 配下のクラスと役割
+3. **機能別処理フロー** — 機能単位のシーケンス（呼び出し元 → ドメインサービス → リポジトリ → 外部アダプタ）
+4. **関連クラス** — 他ドメインとの依存関係・ドメインイベント連携
+5. **設計判断** — DDDパターンの適用理由・トレードオフ
+
+#### 更新ルール
+
+- 新しいクラスを追加したら、対応するドメインの `README.md` にクラス一覧を更新する
+- 新しい機能（ユースケース）を実装したら、処理フローを追記する
+- コミット時にドメインmdファイルの更新を含める
 
 ---
 

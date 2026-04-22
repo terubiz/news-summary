@@ -1,11 +1,11 @@
 ---
 name: spring-ai-integration
-description: Spring AI integration patterns for LLM-powered features. Use when integrating OpenAI, building AI-powered services, or implementing prompt-based workflows. Covers ChatClient, prompt engineering, and error handling.
+description: Spring AI integration patterns for LLM-powered features using Anthropic Claude. Use when integrating Claude Sonnet, building AI-powered services, or implementing prompt-based workflows. Covers ChatClient, prompt engineering, and error handling.
 ---
 
-## Spring AI Integration Patterns
+## Spring AI + Anthropic Claude 統合パターン
 
-### ChatClient Setup
+### ChatClient セットアップ
 
 ```kotlin
 @Configuration
@@ -17,51 +17,66 @@ class AiConfig {
 }
 ```
 
-### Prompt Engineering
+`application.yml` 設定：
 
-- Use structured prompts with clear instructions
-- Include examples for few-shot learning
-- Specify output format (JSON, plain text, etc.)
-- Set temperature and max tokens appropriately
+```yaml
+spring:
+  ai:
+    anthropic:
+      api-key: ${ANTHROPIC_API_KEY}
+      chat:
+        options:
+          model: claude-sonnet-4-5
+          max-tokens: 2048
+          temperature: 0.7
+```
+
+### プロンプトエンジニアリング
+
+- 構造化されたプロンプトに明確な指示を含める
+- Few-shot学習のための例を含める
+- 出力フォーマット（JSON、プレーンテキスト等）を明示する
+- Claudeは日本語の品質が高く、経済ニュース要約に適している
 
 ```kotlin
 val response = chatClient.prompt()
     .user { u -> u.text("""
-        Summarize the following news article in Japanese.
+        以下のニュース記事を日本語で要約してください。
         
-        Article: {article}
+        記事: {article}
         
-        Format: 300 characters max, include stock index impact.
+        フォーマット: {charLimit}文字以内、株価指数への影響を含める。
     """.trimIndent())
     .param("article", articleText)
+    .param("charLimit", charLimit.toString())
     }
     .call()
     .content()
 ```
 
-### Dynamic Prompt Building
+### 動的プロンプト構築
 
-- Build prompts based on user settings
-- Use template engines for complex prompts
-- Validate prompt length before API call
+- ユーザー設定（補足レベル・文字数モード・分析観点）に基づいてプロンプトを構築
+- 補足レベル別の指示文を切り替える
+- API呼び出し前にプロンプト長を検証する
 
-### Error Handling
+### エラーハンドリング
 
-- Catch `OpenAiApiException` for API errors
-- Implement retry logic with exponential backoff
-- Log failed prompts for debugging
-- Provide fallback responses when API fails
+- `AnthropicApiException` をキャッチしてAPIエラーを処理する
+- 指数バックオフによるリトライロジックを実装する
+- 失敗したプロンプトをデバッグ用にログ記録する
+- API失敗時のフォールバックレスポンスを提供する
 
-### Cost Optimization
+### コスト最適化
 
-- Cache responses when appropriate
-- Use streaming for long responses
-- Monitor token usage
-- Consider using cheaper models for simple tasks
+- 適切な場合はレスポンスをキャッシュする
+- 長いレスポンスにはストリーミングを使用する
+- トークン使用量を監視する
+- シンプルなタスクには軽量モデルの使用を検討する
 
-### Testing
+### テスト
 
-- Mock `ChatClient` in unit tests
-- Use test fixtures for prompt responses
-- Test prompt building logic separately
-- Validate output parsing
+- ユニットテストでは `ChatClient` をモック化する
+- プロンプトレスポンスのテストフィクスチャを使用する
+- プロンプト構築ロジックを個別にテストする
+- 出力パースを検証する
