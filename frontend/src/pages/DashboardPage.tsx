@@ -5,8 +5,6 @@ import { useSseStream } from '../hooks/useSseStream';
 import { useAuth } from '../hooks/useAuth';
 import { ChannelMultiSelector } from '../components/settings/ChannelMultiSelector';
 
-/** linear-ui-skills: #080A0A背景, Inter font, ダークモード */
-
 export default function DashboardPage() {
   const { logout, user } = useAuth();
   const { isConnected, error: sseError } = useSseStream();
@@ -24,57 +22,51 @@ export default function DashboardPage() {
     <main
       className="min-h-dvh"
       style={{
-        backgroundColor: '#080A0A',
+        backgroundColor: '#0F1114',
         fontFamily: 'Inter, system-ui, sans-serif',
-        color: '#E2E4E3',
+        color: '#E8E8E8',
       }}
     >
       {/* ヘッダー */}
       <header
-        className="flex items-center justify-between px-6 py-4"
         style={{
-          borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '12px 24px',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
         }}
       >
-        <div className="flex items-center" style={{ gap: '16px' }}>
-          <h1 style={{ fontSize: '17px', fontWeight: 600 }}>
-            Economic News AI
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <h1 style={{ fontSize: '18px', fontWeight: 700, color: '#FFFFFF', margin: 0 }}>
+            News Summary
           </h1>
-          {/* SSE接続ステータス */}
           <span
             style={{
-              width: '6px',
-              height: '6px',
+              width: '8px',
+              height: '8px',
               borderRadius: '50%',
-              backgroundColor: isConnected ? '#75B88A' : '#D29E79',
+              backgroundColor: isConnected ? '#4ADE80' : '#F87171',
               display: 'inline-block',
             }}
             title={isConnected ? 'リアルタイム接続中' : '接続切断'}
           />
         </div>
-        <nav className="flex items-center" style={{ gap: '16px' }}>
+        <nav style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
           <Link
             to="/settings/summary"
-            style={{
-              fontSize: '13px',
-              color: '#525456',
-              textDecoration: 'none',
-            }}
+            style={{ fontSize: '13px', color: '#A0A0A0', textDecoration: 'none' }}
           >
             要約設定
           </Link>
           <Link
             to="/settings/notifications"
-            style={{
-              fontSize: '13px',
-              color: '#525456',
-              textDecoration: 'none',
-            }}
+            style={{ fontSize: '13px', color: '#A0A0A0', textDecoration: 'none' }}
           >
             通知設定
           </Link>
           {user ? (
-            <span style={{ fontSize: '12px', color: '#444749' }}>
+            <span style={{ fontSize: '12px', color: '#808080' }}>
               {user.email}
             </span>
           ) : null}
@@ -83,9 +75,11 @@ export default function DashboardPage() {
             onClick={logout}
             style={{
               fontSize: '12px',
-              color: '#525456',
+              color: '#A0A0A0',
               backgroundColor: 'transparent',
-              border: 'none',
+              border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: '4px',
+              padding: '4px 10px',
               cursor: 'pointer',
             }}
             aria-label="ログアウト"
@@ -98,25 +92,25 @@ export default function DashboardPage() {
       {/* SSEエラー表示 */}
       {sseError ? (
         <div
-          className="mx-6 mt-4 px-4 py-3"
           style={{
-            backgroundColor: 'rgba(210, 158, 121, 0.1)',
+            margin: '16px 24px 0',
+            padding: '10px 16px',
+            backgroundColor: 'rgba(248, 113, 113, 0.1)',
             borderRadius: '6px',
-            border: '1px solid rgba(210, 158, 121, 0.2)',
+            border: '1px solid rgba(248, 113, 113, 0.2)',
           }}
         >
-          <p style={{ fontSize: '13px', color: '#D29E79' }}>{sseError}</p>
+          <p style={{ fontSize: '13px', color: '#F87171', margin: 0 }}>{sseError}</p>
         </div>
       ) : null}
 
-      <div className="px-6 py-5">
-        {/* 要約一覧 */}
+      <div style={{ padding: '24px' }}>
         <section>
           <h2
             style={{
-              fontSize: '15px',
-              fontWeight: 500,
-              color: '#B2B3B3',
+              fontSize: '16px',
+              fontWeight: 600,
+              color: '#FFFFFF',
               marginBottom: '16px',
             }}
           >
@@ -126,7 +120,6 @@ export default function DashboardPage() {
         </section>
       </div>
 
-      {/* 送信モーダル */}
       {sendTarget !== null ? (
         <ChannelMultiSelector
           summaryId={sendTarget}

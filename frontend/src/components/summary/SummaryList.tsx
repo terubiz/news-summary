@@ -96,7 +96,7 @@ export function SummaryList({ onSend }: SummaryListProps) {
         <>
           {data.content.length === 0 ? (
             <div className="py-12 text-center">
-              <p style={{ fontSize: '14px', color: '#525456' }}>
+              <p style={{ fontSize: '14px', color: '#909090' }}>
                 {keyword || indexSymbol ? '条件に一致する要約がありません' : '要約がまだありません'}
               </p>
             </div>
@@ -117,7 +117,7 @@ export function SummaryList({ onSend }: SummaryListProps) {
                 disabled={page === 0}
                 style={{
                   fontSize: '13px',
-                  color: page === 0 ? '#525456' : '#B2B3B3',
+                  color: page === 0 ? '#909090' : '#B2B3B3',
                   backgroundColor: 'rgba(255, 255, 255, 0.04)',
                   padding: '6px 12px',
                   borderRadius: '6px',
@@ -129,7 +129,7 @@ export function SummaryList({ onSend }: SummaryListProps) {
               >
                 前へ
               </button>
-              <span style={{ fontSize: '13px', color: '#525456' }}>
+              <span style={{ fontSize: '13px', color: '#909090' }}>
                 {page + 1} / {data.totalPages}
               </span>
               <button
@@ -138,7 +138,7 @@ export function SummaryList({ onSend }: SummaryListProps) {
                 disabled={page >= data.totalPages - 1}
                 style={{
                   fontSize: '13px',
-                  color: page >= data.totalPages - 1 ? '#525456' : '#B2B3B3',
+                  color: page >= data.totalPages - 1 ? '#909090' : '#B2B3B3',
                   backgroundColor: 'rgba(255, 255, 255, 0.04)',
                   padding: '6px 12px',
                   borderRadius: '6px',

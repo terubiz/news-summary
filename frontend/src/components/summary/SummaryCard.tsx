@@ -85,8 +85,8 @@ export function SummaryCard({ summary, onSend }: SummaryCardProps) {
         style={{
           fontSize: '14px',
           fontWeight: 400,
-          color: '#B2B3B3',
-          lineHeight: '1.6',
+          color: '#D4D4D4',
+          lineHeight: '1.7',
           marginBottom: '12px',
         }}
       >
@@ -99,7 +99,7 @@ export function SummaryCard({ summary, onSend }: SummaryCardProps) {
           dateTime={summary.generatedAt}
           style={{
             fontSize: '12px',
-            color: '#525456',
+            color: '#909090',
           }}
         >
           {formatDate(summary.generatedAt)}
