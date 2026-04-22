@@ -60,25 +60,25 @@
 - [ ] 4. チェックポイント - 認証基盤の確認
   - すべてのテストが通過することを確認し、疑問点があればユーザーに確認する。
 
-- [ ] 5. 暗号化サービスと送信チャンネル設定の実装
-  - [ ] 5.1 暗号化サービスを実装する
+- [x] 5. 暗号化サービスと送信チャンネル設定の実装
+  - [x] 5.1 暗号化サービスを実装する
     - AES-256-GCM を使用した `EncryptionService`（暗号化・復号）を実装する
     - `DeliveryChannel.encrypted_config` の保存・取得時に自動的に暗号化・復号する仕組みを実装する
     - _要件: 6.6_
 
-  - [ ]* 5.2 暗号化のプロパティテストを書く
+  - [x]* 5.2 暗号化のプロパティテストを書く
     - **プロパティ 6: 接続情報の暗号化保存**
     - **検証対象: 要件 6.6**
     - 任意のチャンネル設定に対して、DB に保存された `encrypted_config` が平文のAPIキー・Webhook URLを含まないことを検証する
 
-  - [ ] 5.3 通知設定 API コントローラを実装する
+  - [x] 5.3 通知設定 API コントローラを実装する
     - `GET/POST /api/v1/channels`・`PUT/DELETE /api/v1/channels/{id}`・`POST /api/v1/channels/{id}/test` エンドポイントを実装する
     - チャンネル追加時の接続テスト実行と結果返却ロジックを実装する
     - 無効な接続情報に対する具体的エラーメッセージ返却を実装する
     - _要件: 6.1, 6.2, 6.3, 6.4, 6.5, 6.7_
 
-- [ ] 6. 要約設定 API の実装
-  - [ ] 6.1 要約設定サービスと API を実装する
+- [x] 6. 要約設定 API の実装
+  - [x] 6.1 要約設定サービスと API を実装する
     - `SummarySettingsService`（設定取得・保存）を実装する
     - `GET /api/v1/settings/summary`・`PUT /api/v1/settings/summary` エンドポイントを実装する
     - `GET /api/v1/settings/schedule`・`PUT /api/v1/settings/schedule` エンドポイントを実装する
@@ -90,13 +90,13 @@
     - **検証対象: 要件 9.7, 9.8**
     - 任意の `SummaryMode` と `SupplementLevel` の組み合わせに対して、保存後に生成された要約が設定パラメータを反映していることを検証する
 
-- [ ] 7. ニュース収集機能の実装
-  - [ ] 7.1 NewsAPI クライアントを実装する
+- [x] 7. ニュース収集機能の実装
+  - [x] 7.1 NewsAPI クライアントを実装する
     - `NewsApiClient`（NewsAPI / GNews API への HTTP クライアント）を実装する
     - 接続失敗時のエラーログ記録と他ソース継続処理を実装する
     - _要件: 1.2, 1.4_
 
-  - [ ] 7.2 ニュース収集サービスを実装する
+  - [x] 7.2 ニュース収集サービスを実装する
     - `NewsCollectorService.collectNews()` を実装する（記事取得・重複チェック・DB保存・収集ログ記録）
     - `isDuplicate()` メソッドを実装する（同一 URL または同一タイトルの判定）
     - 収集完了後に AI 要約処理をトリガーするロジックを実装する
@@ -107,26 +107,26 @@
     - **検証対象: 要件 1.5**
     - 任意のニュース記事コレクションに対して、同一 URL または同一タイトルの記事が1件のみ保存されることを検証する
 
-- [ ] 8. 株価指数データ取得機能の実装
-  - [ ] 8.1 株価指数クライアントとサービスを実装する
+- [x] 8. 株価指数データ取得機能の実装
+  - [x] 8.1 株価指数クライアントとサービスを実装する
     - `StockApiClient`（Alpha Vantage API / Yahoo Finance API への HTTP クライアント）を実装する
     - `IndexAnalyzerService.fetchLatestIndices()` を実装する（日経225・S&P500・NASDAQ・DAX の取得）
     - `getCachedIndices()` を実装する（API 失敗時のキャッシュ返却と `is_stale=true` フラグ付与）
     - 市場閉場中の直近終値返却ロジックを実装する
     - _要件: 2.1, 2.2, 2.3, 2.4, 2.5_
 
-  - [ ] 8.2 株価指数 API コントローラを実装する
+  - [x] 8.2 株価指数 API コントローラを実装する
     - `GET /api/v1/indices` エンドポイントを実装する
     - _要件: 2.1, 4.4_
 
-- [ ] 9. AI要約生成機能の実装
-  - [ ] 9.1 プロンプトビルダーを実装する
+- [x] 9. AI要約生成機能の実装
+  - [x] 9.1 プロンプトビルダーを実装する
     - `SummaryPromptBuilder.build()` を実装する（補足レベル・文字数モード・分析観点・用語解説指示を動的に組み立て）
     - 補足レベル別のプロンプト指示文（BEGINNER・INTERMEDIATE・ADVANCED）を実装する
     - 用語解説セクション付加指示（ADVANCED 以外）を実装する
     - _要件: 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11, 3.12_
 
-  - [ ] 9.2 AI要約サービスを実装する
+  - [x] 9.2 AI要約サービスを実装する
     - `AISummarizerService.summarize()` を Spring AI `ChatClient` を使って実装する
     - 複数記事の統合要約ロジックを実装する
     - 要約結果（`Summary`・`SummaryIndexImpact`・`SummarySourceArticle`）の DB 保存を実装する
@@ -149,7 +149,7 @@
     - **検証対象: 要件 3.10**
     - 任意のニュース記事セットに対して、用語解説セクションの各項目説明文が50文字以内であることを検証する
 
-  - [ ] 9.6 要約 API コントローラを実装する
+  - [x] 9.6 要約 API コントローラを実装する
     - `GET /api/v1/summaries`（ページネーション・Stock_Index フィルタ・キーワード検索）を実装する
     - `GET /api/v1/summaries/{id}` を実装する
     - _要件: 4.1, 4.2, 4.3, 4.5, 4.6, 8.1, 8.2, 8.4_
@@ -158,14 +158,14 @@
   - すべてのテストが通過することを確認し、疑問点があればユーザーに確認する。
 
 - [ ] 11. SSEリアルタイム更新の実装
-  - [ ] 11.1 SSE エンドポイントと発行サービスを実装する
+  - [x] 11.1 SSE エンドポイントと発行サービスを実装する
     - `SsePublisher.publishSummaryCreated()` と `subscribe()` を実装する
     - `GET /api/v1/summaries/stream` SSE エンドポイントを実装する
     - 新しい要約が DB に保存された後に SSE イベントを発行するフックを `AISummarizerService` に追加する
     - _要件: 4.7_
 
 - [ ] 12. 通知送信機能の実装
-  - [ ] 12.1 チャンネル別送信アダプタを実装する
+  - [x] 12.1 チャンネル別送信アダプタを実装する
     - `EmailNotificationAdapter`（Spring Mail / SendGrid API）を実装する
     - `SlackNotificationAdapter`（Incoming Webhook HTTP POST）を実装する
     - `LineNotificationAdapter`（LINE Messaging API）を実装する
@@ -173,7 +173,7 @@
     - 各アダプタで送信メッセージに要約テキスト・関連 Stock_Index・影響方向・ソースURLを含める
     - _要件: 5.1, 5.6, 5.10, 5.11, 5.12, 5.13_
 
-  - [ ] 12.2 通知サービスを実装する
+  - [x] 12.2 通知サービスを実装する
     - `NotificationService.sendToChannel()` と `sendToChannels()` を実装する（並行送信）
     - 送信失敗時のエラーログ記録・最大3回リトライ（指数バックオフ）を実装する
     - 3回失敗後のユーザー通知ロジックを実装する
@@ -187,13 +187,13 @@
     - 任意のチャンネルと要約の組み合わせに対して、送信処理（成功・失敗を問わず）後に必ず `DeliveryLog` レコードが記録されることを検証する
 
 - [ ] 13. スケジューラの実装
-  - [ ] 13.1 ニュース収集ジョブを実装する
+  - [x] 13.1 ニュース収集ジョブを実装する
     - `NewsCollectionJob`（`@Scheduled` + Quartz）を実装する
     - ユーザーごとの `CollectionSchedule.cron_expression` に基づいてジョブをスケジュールする
     - 収集完了後に AI 要約処理を自動トリガーするロジックを実装する
     - _要件: 1.1, 1.2, 1.7_
 
-  - [ ] 13.2 通知送信ジョブを実装する
+  - [x] 13.2 通知送信ジョブを実装する
     - `NotificationDeliveryJob`（`@Scheduled`）を実装する
     - 各チャンネルの `delivery_schedule` 設定（即時・毎時・毎日指定時刻）に基づいて送信をトリガーする
     - フィルタ条件（対象 Stock_Index）に合致する要約のみを送信対象とする
