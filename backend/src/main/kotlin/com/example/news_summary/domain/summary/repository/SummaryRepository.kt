@@ -19,6 +19,15 @@ interface SummaryRepository {
     /** キーワード検索（要約テキスト内） */
     fun searchByKeyword(userId: Long, keyword: String, page: Int, size: Int): PageResult<Summary>
 
+    /** Stock_Indexフィルタ付きページネーション */
+    fun findByIndexSymbol(indexSymbol: String, page: Int, size: Int): PageResult<Summary>
+
+    /** 全ユーザー向けページネーション（管理用） */
+    fun findAllOrderByGeneratedAtDesc(page: Int, size: Int): PageResult<Summary>
+
+    /** 全ユーザー向けキーワード検索 */
+    fun searchAllByKeyword(keyword: String, page: Int, size: Int): PageResult<Summary>
+
     /** リトライ対象（FAILED かつ retryCount < 3）を取得 */
     fun findRetryTargets(): List<Summary>
 

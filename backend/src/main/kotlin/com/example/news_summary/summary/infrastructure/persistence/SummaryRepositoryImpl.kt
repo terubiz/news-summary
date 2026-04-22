@@ -56,6 +56,42 @@ class SummaryRepositoryImpl(
         )
     }
 
+    override fun findByIndexSymbol(indexSymbol: String, page: Int, size: Int): PageResult<Summary> {
+        val pageable = PageRequest.of(page, size)
+        val result = jpaRepository.findByIndexSymbol(indexSymbol, pageable)
+        return PageResult(
+            content = result.content.map { it.toDomain() },
+            totalElements = result.totalElements,
+            totalPages = result.totalPages,
+            page = result.number,
+            size = result.size
+        )
+    }
+
+    override fun findAllOrderByGeneratedAtDesc(page: Int, size: Int): PageResult<Summary> {
+        val pageable = PageRequest.of(page, size)
+        val result = jpaRepository.findAllByOrderByGeneratedAtDesc(pageable)
+        return PageResult(
+            content = result.content.map { it.toDomain() },
+            totalElements = result.totalElements,
+            totalPages = result.totalPages,
+            page = result.number,
+            size = result.size
+        )
+    }
+
+    override fun searchAllByKeyword(keyword: String, page: Int, size: Int): PageResult<Summary> {
+        val pageable = PageRequest.of(page, size)
+        val result = jpaRepository.searchAllByKeyword(keyword, pageable)
+        return PageResult(
+            content = result.content.map { it.toDomain() },
+            totalElements = result.totalElements,
+            totalPages = result.totalPages,
+            page = result.number,
+            size = result.size
+        )
+    }
+
     override fun findRetryTargets(): List<Summary> =
         jpaRepository.findRetryTargets().map { it.toDomain() }
 
