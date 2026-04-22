@@ -67,6 +67,9 @@ dependencies {
 
     // WireMock
     testImplementation("org.wiremock:wiremock-standalone:3.3.1")
+
+    // Mockito-Kotlin
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
 }
 
 dependencyManagement {
