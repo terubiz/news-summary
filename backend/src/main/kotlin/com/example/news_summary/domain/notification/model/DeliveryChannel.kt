@@ -4,13 +4,25 @@ import com.example.news_summary.domain.user.model.UserId
 import java.time.Instant
 
 /**
- * 通知送信チャンネル ドメインモデル（集約ルート）
- * JPAアノテーションを持たない純粋なドメインオブジェクト。
- * id: DeliveryChannelId により「永続化済み = IDが確定している」ことを型で保証する。
- * 新規作成時は id = null を許容する（save後にIDが確定する）。
+ * 通知チャンネルの新規作成用モデル。IDやタイムスタンプを持たない。
+ * リポジトリの save(NewDeliveryChannel) で永続化し、DeliveryChannel（ID確定済み）が返る。
+ */
+data class NewDeliveryChannel(
+    val userId: UserId,
+    val channelType: ChannelType,
+    /** AES-256-GCM で暗号化された接続設定（JSON） */
+    val encryptedConfig: String,
+    /** 送信スケジュール: IMMEDIATE / HOURLY / DAILY_HH:MM */
+    val deliverySchedule: String = "IMMEDIATE",
+    val filterIndices: List<String> = emptyList()
+)
+
+/**
+ * 永続化済み通知送信チャンネル ドメインモデル（集約ルート）。
+ * id は常に non-null。「このオブジェクトが存在する = DBに保存済み」を型で保証する。
  */
 data class DeliveryChannel(
-    val id: DeliveryChannelId? = null,
+    val id: DeliveryChannelId,
     val userId: UserId,
     val channelType: ChannelType,
     /** AES-256-GCM で暗号化された接続設定（JSON） */
@@ -19,5 +31,5 @@ data class DeliveryChannel(
     val deliverySchedule: String = "IMMEDIATE",
     val filterIndices: List<String> = emptyList(),
     val enabled: Boolean = true,
-    val createdAt: Instant? = null
+    val createdAt: Instant
 )

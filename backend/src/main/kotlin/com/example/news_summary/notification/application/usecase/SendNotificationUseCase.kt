@@ -2,6 +2,7 @@ package com.example.news_summary.notification.application.usecase
 
 import com.example.news_summary.domain.news.repository.NewsArticleRepository
 import com.example.news_summary.domain.notification.model.DeliveryChannel
+import com.example.news_summary.domain.notification.model.NewDeliveryLog
 import com.example.news_summary.domain.notification.repository.DeliveryLogRepository
 import com.example.news_summary.domain.notification.service.DeliveryResult
 import com.example.news_summary.domain.notification.service.NotificationSender
@@ -34,7 +35,7 @@ class SendNotificationUseCase(
 
     @Transactional
     override fun sendToChannel(summary: Summary, channel: DeliveryChannel): DeliveryResult {
-        val channelId = channel.id?.value ?: throw IllegalStateException("チャンネルIDが未確定です")
+        val channelId = channel.id.value
         val sender = senderMap[channel.channelType]
             ?: return recordFailure(channelId, summary.id.value, 0, "未対応のチャンネル種別: ${channel.channelType}")
 
@@ -47,7 +48,7 @@ class SendNotificationUseCase(
             sender.send(channel, summary, impacts, sourceUrls)
 
             // 成功ログ記録
-            deliveryLogRepository.save(channelId, summary.id.value, "SUCCESS", 0, null)
+            deliveryLogRepository.save(NewDeliveryLog(channelId, summary.id.value, "SUCCESS", 0, null))
             logger.info("通知送信成功: channelId=$channelId, summaryId=${summary.id.value}")
             DeliveryResult(channelId = channelId, success = true)
         } catch (e: Exception) {
@@ -84,21 +85,25 @@ class SendNotificationUseCase(
             try {
                 // リトライ: 新しいログレコードとして記録
                 deliveryLogRepository.save(
-                    log.channelId,
-                    log.summaryId,
-                    "SUCCESS",
-                    newRetryCount,
-                    null
+                    NewDeliveryLog(
+                        channelId = log.channelId,
+                        summaryId = log.summaryId,
+                        status = "SUCCESS",
+                        retryCount = newRetryCount,
+                        errorMessage = null
+                    )
                 )
                 logger.info("通知リトライ成功: channelId=${log.channelId}, summaryId=${log.summaryId}, retryCount=$newRetryCount")
             } catch (e: Exception) {
                 logger.error("通知リトライ失敗: channelId=${log.channelId}, error=${e.message}", e)
                 deliveryLogRepository.save(
-                    log.channelId,
-                    log.summaryId,
-                    "FAILED",
-                    newRetryCount,
-                    e.message
+                    NewDeliveryLog(
+                        channelId = log.channelId,
+                        summaryId = log.summaryId,
+                        status = "FAILED",
+                        retryCount = newRetryCount,
+                        errorMessage = e.message
+                    )
                 )
 
                 // 3回失敗後のユーザー通知ロジック
@@ -111,7 +116,7 @@ class SendNotificationUseCase(
 
     /** 失敗ログを記録してDeliveryResultを返す */
     private fun recordFailure(channelId: Long, summaryId: Long, retryCount: Int, errorMessage: String?): DeliveryResult {
-        deliveryLogRepository.save(channelId, summaryId, "FAILED", retryCount, errorMessage)
+        deliveryLogRepository.save(NewDeliveryLog(channelId, summaryId, "FAILED", retryCount, errorMessage))
         return DeliveryResult(channelId = channelId, success = false, errorMessage = errorMessage)
     }
 

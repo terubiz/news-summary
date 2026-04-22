@@ -2,6 +2,7 @@ package com.example.news_summary.domain.notification.repository
 
 import com.example.news_summary.domain.notification.model.DeliveryLog
 import com.example.news_summary.domain.notification.model.DeliveryLogId
+import com.example.news_summary.domain.notification.model.NewDeliveryLog
 import java.util.Optional
 
 /**
@@ -16,5 +17,5 @@ interface DeliveryLogRepository {
     /** リトライ対象（FAILED かつ retryCount < 3）を取得 */
     fun findRetryTargets(): List<DeliveryLog>
 
-    fun save(channelId: Long, summaryId: Long, status: String, retryCount: Int, errorMessage: String?): DeliveryLog
+    fun save(log: NewDeliveryLog): DeliveryLog
 }

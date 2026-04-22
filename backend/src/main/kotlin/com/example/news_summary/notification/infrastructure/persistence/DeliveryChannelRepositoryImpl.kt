@@ -2,6 +2,7 @@ package com.example.news_summary.notification.infrastructure.persistence
 
 import com.example.news_summary.domain.notification.model.DeliveryChannel
 import com.example.news_summary.domain.notification.model.DeliveryChannelId
+import com.example.news_summary.domain.notification.model.NewDeliveryChannel
 import com.example.news_summary.domain.notification.repository.DeliveryChannelRepository
 import com.example.news_summary.domain.user.model.UserId
 import org.springframework.stereotype.Component
@@ -23,9 +24,21 @@ class DeliveryChannelRepositoryImpl(
     override fun findAllByEnabledTrue(): List<DeliveryChannel> =
         jpaRepository.findAllByEnabledTrue().map { it.toDomain() }
 
-    override fun save(channel: DeliveryChannel): DeliveryChannel {
+    override fun save(channel: NewDeliveryChannel): DeliveryChannel {
         val entity = DeliveryChannelJpaEntity(
-            id = channel.id?.value,
+            userId = channel.userId.value,
+            channelType = channel.channelType,
+            encryptedConfig = channel.encryptedConfig,
+            deliverySchedule = channel.deliverySchedule,
+            filterIndices = channel.filterIndices.toTypedArray(),
+            enabled = true
+        )
+        return jpaRepository.save(entity).toDomain()
+    }
+
+    override fun update(channel: DeliveryChannel): DeliveryChannel {
+        val entity = DeliveryChannelJpaEntity(
+            id = channel.id.value,
             userId = channel.userId.value,
             channelType = channel.channelType,
             encryptedConfig = channel.encryptedConfig,

@@ -84,13 +84,13 @@ class NotificationDeliveryJob(
 
                 if (filteredSummaries.isNotEmpty()) {
                     logger.info(
-                        "通知送信完了: channelId=${channel.id?.value}, " +
+                        "通知送信完了: channelId=${channel.id.value}, " +
                         "schedule=$schedule, summaries=${filteredSummaries.size}件"
                     )
                 }
             } catch (e: Exception) {
                 logger.error(
-                    "通知送信ジョブ失敗: channelId=${channel.id?.value}, error=${e.message}", e
+                    "通知送信ジョブ失敗: channelId=${channel.id.value}, error=${e.message}", e
                 )
             }
         }

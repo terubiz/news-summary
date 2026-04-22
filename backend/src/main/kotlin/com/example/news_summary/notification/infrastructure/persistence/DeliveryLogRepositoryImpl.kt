@@ -2,6 +2,7 @@ package com.example.news_summary.notification.infrastructure.persistence
 
 import com.example.news_summary.domain.notification.model.DeliveryLog
 import com.example.news_summary.domain.notification.model.DeliveryLogId
+import com.example.news_summary.domain.notification.model.NewDeliveryLog
 import com.example.news_summary.domain.notification.repository.DeliveryLogRepository
 import org.springframework.stereotype.Component
 import java.util.Optional
@@ -28,13 +29,13 @@ class DeliveryLogRepositoryImpl(
     override fun findRetryTargets(): List<DeliveryLog> =
         jpaRepository.findRetryTargets().map { it.toDomain() }
 
-    override fun save(channelId: Long, summaryId: Long, status: String, retryCount: Int, errorMessage: String?): DeliveryLog {
+    override fun save(log: NewDeliveryLog): DeliveryLog {
         val entity = DeliveryLogJpaEntity(
-            channelId = channelId,
-            summaryId = summaryId,
-            status = status,
-            retryCount = retryCount,
-            errorMessage = errorMessage
+            channelId = log.channelId,
+            summaryId = log.summaryId,
+            status = log.status,
+            retryCount = log.retryCount,
+            errorMessage = log.errorMessage
         )
         return jpaRepository.save(entity).toDomain()
     }
