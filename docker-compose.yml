@@ -3,9 +3,9 @@ version: '3.9'
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: economic-news-postgres
+    container_name: news-summary-postgres
     environment:
-      POSTGRES_DB: economic_news
+      POSTGRES_DB: news_summary
       POSTGRES_USER: appuser
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-apppassword}
     ports:
@@ -13,7 +13,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U appuser -d economic_news"]
+      test: ["CMD-SHELL", "pg_isready -U appuser -d news_summary"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -22,14 +22,14 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: economic-news-backend
+    container_name: news-summary-backend
     environment:
-      DATABASE_URL: jdbc:postgresql://postgres:5432/economic_news
+      DATABASE_URL: jdbc:postgresql://postgres:5432/news_summary
       DATABASE_USERNAME: appuser
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-apppassword}
       JWT_SECRET: ${JWT_SECRET:-changeme-this-is-a-very-long-secret-key-for-jwt-signing-at-least-256-bits}
-      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-changeme-this-is-a-32-byte-key}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-changeme-this-is-a-32-byte-key!}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       NEWS_API_KEY: ${NEWS_API_KEY:-}
       STOCK_API_KEY: ${STOCK_API_KEY:-}
       SPRING_PROFILES_ACTIVE: docker
@@ -44,7 +44,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: economic-news-frontend
+    container_name: news-summary-frontend
     environment:
       VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080}
     ports:
