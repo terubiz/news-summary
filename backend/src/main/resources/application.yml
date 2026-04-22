@@ -45,7 +45,7 @@ server:
 app:
   gemini:
     api-key: ${GOOGLE_GENAI_API_KEY:}
-    model: gemini-2.0-flash
+    model: gemini-2.5-flash-lite
 
   jwt:
     secret: ${JWT_SECRET:changeme-this-is-a-very-long-secret-key-for-jwt-signing-at-least-256-bits}
