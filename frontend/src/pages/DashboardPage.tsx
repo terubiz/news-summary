@@ -4,11 +4,14 @@ import { SummaryList } from '../components/summary/SummaryList';
 import { useSseStream } from '../hooks/useSseStream';
 import { useAuth } from '../hooks/useAuth';
 import { ChannelMultiSelector } from '../components/settings/ChannelMultiSelector';
+import { api } from '../lib/api';
 
 export default function DashboardPage() {
   const { logout, user } = useAuth();
   const { isConnected, error: sseError } = useSseStream();
   const [sendTarget, setSendTarget] = useState<number | null>(null);
+  const [isCollecting, setIsCollecting] = useState(false);
+  const [collectResult, setCollectResult] = useState<string | null>(null);
 
   const handleSend = useCallback((summaryId: number) => {
     setSendTarget(summaryId);
@@ -16,6 +19,19 @@ export default function DashboardPage() {
 
   const handleCloseSend = useCallback(() => {
     setSendTarget(null);
+  }, []);
+
+  const handleCollect = useCallback(async () => {
+    setIsCollecting(true);
+    setCollectResult(null);
+    try {
+      const { data } = await api.post<{ message: string }>('/collect');
+      setCollectResult(data.message);
+    } catch {
+      setCollectResult('収集に失敗しました');
+    } finally {
+      setIsCollecting(false);
+    }
   }, []);
 
   return (
@@ -105,6 +121,31 @@ export default function DashboardPage() {
       ) : null}
 
       <div style={{ padding: '24px' }}>
+        {/* 手動収集ボタン */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+          <button
+            type="button"
+            onClick={handleCollect}
+            disabled={isCollecting}
+            style={{
+              fontSize: '14px',
+              fontWeight: 600,
+              color: '#FFFFFF',
+              backgroundColor: isCollecting ? '#333' : '#2563EB',
+              padding: '10px 20px',
+              borderRadius: '6px',
+              border: 'none',
+              cursor: isCollecting ? 'not-allowed' : 'pointer',
+              opacity: isCollecting ? 0.7 : 1,
+            }}
+          >
+            {isCollecting ? '収集中...' : '📰 ニュース収集＆要約'}
+          </button>
+          {collectResult ? (
+            <span style={{ fontSize: '13px', color: '#A0A0A0' }}>{collectResult}</span>
+          ) : null}
+        </div>
+
         <section>
           <h2
             style={{
