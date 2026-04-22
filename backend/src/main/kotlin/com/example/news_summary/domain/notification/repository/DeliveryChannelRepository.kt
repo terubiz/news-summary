@@ -12,6 +12,7 @@ interface DeliveryChannelRepository {
     fun findById(id: DeliveryChannelId): DeliveryChannel?
     fun findByUserId(userId: UserId): List<DeliveryChannel>
     fun findByUserIdAndEnabledTrue(userId: UserId): List<DeliveryChannel>
+    fun findAllByEnabledTrue(): List<DeliveryChannel>
     fun save(channel: DeliveryChannel): DeliveryChannel
     fun delete(id: DeliveryChannelId)
 }

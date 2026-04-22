@@ -8,4 +8,5 @@ import org.springframework.stereotype.Repository
 interface DeliveryChannelJpaRepository : JpaRepository<DeliveryChannelJpaEntity, Long> {
     fun findByUserIdAndEnabledTrue(userId: Long): List<DeliveryChannelJpaEntity>
     fun findByUserId(userId: Long): List<DeliveryChannelJpaEntity>
+    fun findAllByEnabledTrue(): List<DeliveryChannelJpaEntity>
 }

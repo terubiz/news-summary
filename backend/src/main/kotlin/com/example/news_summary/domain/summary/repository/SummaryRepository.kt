@@ -28,6 +28,9 @@ interface SummaryRepository {
     /** 全ユーザー向けキーワード検索 */
     fun searchAllByKeyword(keyword: String, page: Int, size: Int): PageResult<Summary>
 
+    /** 指定時刻以降に生成された全要約を取得 */
+    fun findByGeneratedAtAfter(after: Instant): List<Summary>
+
     /** リトライ対象（FAILED かつ retryCount < 3）を取得 */
     fun findRetryTargets(): List<Summary>
 

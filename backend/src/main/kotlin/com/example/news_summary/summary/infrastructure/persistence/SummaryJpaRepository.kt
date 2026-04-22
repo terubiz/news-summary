@@ -43,6 +43,9 @@ interface SummaryJpaRepository : JpaRepository<SummaryJpaEntity, Long> {
     @Query("SELECT s FROM SummaryJpaEntity s WHERE s.summaryText LIKE %:keyword% ORDER BY s.generatedAt DESC")
     fun searchAllByKeyword(keyword: String, pageable: Pageable): Page<SummaryJpaEntity>
 
+    /** 指定時刻以降に生成された全要約を取得 */
+    fun findByGeneratedAtAfterOrderByGeneratedAtDesc(after: Instant): List<SummaryJpaEntity>
+
     /** リトライ対象（FAILED かつ retryCount < 3）を取得 */
     @Query("SELECT s FROM SummaryJpaEntity s WHERE s.status = 'FAILED' AND s.retryCount < 3")
     fun findRetryTargets(): List<SummaryJpaEntity>

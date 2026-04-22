@@ -92,6 +92,9 @@ class SummaryRepositoryImpl(
         )
     }
 
+    override fun findByGeneratedAtAfter(after: Instant): List<Summary> =
+        jpaRepository.findByGeneratedAtAfterOrderByGeneratedAtDesc(after).map { it.toDomain() }
+
     override fun findRetryTargets(): List<Summary> =
         jpaRepository.findRetryTargets().map { it.toDomain() }
 

@@ -20,6 +20,9 @@ class DeliveryChannelRepositoryImpl(
     override fun findByUserIdAndEnabledTrue(userId: UserId): List<DeliveryChannel> =
         jpaRepository.findByUserIdAndEnabledTrue(userId.value).map { it.toDomain() }
 
+    override fun findAllByEnabledTrue(): List<DeliveryChannel> =
+        jpaRepository.findAllByEnabledTrue().map { it.toDomain() }
+
     override fun save(channel: DeliveryChannel): DeliveryChannel {
         val entity = DeliveryChannelJpaEntity(
             id = channel.id?.value,
