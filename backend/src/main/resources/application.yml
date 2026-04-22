@@ -70,6 +70,11 @@ app:
     key: ${STOCK_API_KEY:}
     base-url: https://www.alphavantage.co
 
+management:
+  endpoint:
+    health:
+      show-details: always
+
 logging:
   level:
     com.example.news_summary: INFO
