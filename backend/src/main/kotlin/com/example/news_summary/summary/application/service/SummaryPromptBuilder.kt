@@ -34,6 +34,11 @@ class SummaryPromptBuilder {
         sb.appendLine("あなたは経済ニュースの専門アナリストです。")
         sb.appendLine("以下のニュース記事を分析し、株価指数への影響を含めた要約を日本語で生成してください。")
         sb.appendLine()
+        sb.appendLine("【重要な注意事項】")
+        sb.appendLine("記事の中には、最近公開されたものの内容が過去の出来事のみを扱っているものがあります。")
+        sb.appendLine("現在進行中のニュースや最新の動向に焦点を当て、過去の出来事だけを再報道した記事は要約から除外してください。")
+        sb.appendLine("ただし、過去の出来事が現在の市場動向に直接関連している場合は含めてください。")
+        sb.appendLine()
 
         // 文字数モード指示
         val charLimit = settings.summaryMode.charLimit
