@@ -13,6 +13,8 @@ import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
 
 /**
  * ニュース収集ユースケース。
@@ -23,6 +25,8 @@ import java.time.Instant
  * 3. 重複なしの記事をDB保存
  * 4. 収集ログを記録
  * 5. NewsCollectedEvent を発行 → AI要約処理をトリガー
+ *
+ * @param fromDays 何日前からの記事を取得するか（1〜365）。デフォルト1日前。
  */
 @Service
 class CollectNewsUseCase(
@@ -34,8 +38,9 @@ class CollectNewsUseCase(
     private val logger = LoggerFactory.getLogger(javaClass)
 
     @Transactional
-    fun execute(userId: UserId): CollectionResult {
-        val rawArticles = newsApiClient.fetchLatestNews("economy stock market finance")
+    fun execute(userId: UserId, fromDays: Int = 1): CollectionResult {
+        val fromDate = LocalDate.now().minusDays(fromDays.toLong().coerceIn(1, 365))
+        val rawArticles = newsApiClient.fetchLatestNews("economy OR stock OR market OR finance", fromDate)
 
         var savedCount = 0
         var skippedCount = 0
@@ -79,9 +84,18 @@ class CollectNewsUseCase(
         )
 
         // ドメインイベント発行（要件1.7: 収集完了後にAI要約をトリガー）
-        if (savedArticleIds.isNotEmpty()) {
-            eventPublisher.publishEvent(NewsCollectedEvent(userId, savedArticleIds))
-            logger.info("ニュース収集完了: ${savedCount}件保存, ${skippedCount}件スキップ, ${errors.size}件エラー")
+        // 常に指定期間内の全記事（新規＋既存）を要約対象にする
+        val fromInstant = fromDate.atStartOfDay(ZoneOffset.UTC).toInstant()
+        val allArticleIds = articleRepository.findByPublishedAtAfter(fromInstant).map { it.id }
+
+        if (allArticleIds.isNotEmpty()) {
+            eventPublisher.publishEvent(NewsCollectedEvent(userId, allArticleIds))
+            logger.info(
+                "ニュース収集完了: ${savedCount}件新規保存, ${skippedCount}件スキップ, " +
+                "${allArticleIds.size}件を要約対象として発行（${fromDate}以降）"
+            )
+        } else {
+            logger.info("要約対象の記事がありません: ${savedCount}件保存, ${skippedCount}件スキップ")
         }
 
         return CollectionResult(

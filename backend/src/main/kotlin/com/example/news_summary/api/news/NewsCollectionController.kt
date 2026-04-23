@@ -5,8 +5,13 @@ import com.example.news_summary.news.application.usecase.CollectNewsUseCase
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+
+data class CollectionRequest(
+    val fromDays: Int = 1  // 何日前からの記事を取得するか（1〜365）
+)
 
 data class CollectionResponse(
     val savedCount: Int,
@@ -25,9 +30,12 @@ class NewsCollectionController(
     private val collectNewsUseCase: CollectNewsUseCase
 ) {
     @PostMapping
-    fun collectNow(auth: Authentication): ResponseEntity<CollectionResponse> {
+    fun collectNow(
+        @RequestBody request: CollectionRequest,
+        auth: Authentication
+    ): ResponseEntity<CollectionResponse> {
         val userId = UserId(auth.principal as Long)
-        val result = collectNewsUseCase.execute(userId)
+        val result = collectNewsUseCase.execute(userId, request.fromDays)
         return ResponseEntity.ok(
             CollectionResponse(
                 savedCount = result.savedCount,

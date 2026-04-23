@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { SummaryList } from '../components/summary/SummaryList';
 import { useSseStream } from '../hooks/useSseStream';
 import { useAuth } from '../hooks/useAuth';
@@ -9,9 +10,21 @@ import { api } from '../lib/api';
 export default function DashboardPage() {
   const { logout, user } = useAuth();
   const { isConnected, error: sseError } = useSseStream();
+  const queryClient = useQueryClient();
   const [sendTarget, setSendTarget] = useState<number | null>(null);
   const [isCollecting, setIsCollecting] = useState(false);
   const [collectResult, setCollectResult] = useState<string | null>(null);
+  const [fromDays, setFromDays] = useState(1);
+
+  const dateRangeOptions = [
+    { value: 1, label: '1日前' },
+    { value: 3, label: '3日前' },
+    { value: 7, label: '1週間前' },
+    { value: 30, label: '1ヶ月前' },
+    { value: 90, label: '3ヶ月前' },
+    { value: 180, label: '6ヶ月前' },
+    { value: 365, label: '1年前' },
+  ] as const;
 
   const handleSend = useCallback((summaryId: number) => {
     setSendTarget(summaryId);
@@ -25,14 +38,25 @@ export default function DashboardPage() {
     setIsCollecting(true);
     setCollectResult(null);
     try {
-      const { data } = await api.post<{ message: string }>('/collect');
-      setCollectResult(data.message);
+      const { data } = await api.post<{ message: string }>('/collect', { fromDays });
+      setCollectResult(data.message + '（要約生成中...）');
+
+      // 要約生成は非同期のため、SSEのフォールバックとしてポーリングで更新を確認
+      const pollInterval = setInterval(() => {
+        queryClient.invalidateQueries({ queryKey: ['summaries'] });
+      }, 3000);
+
+      // 30秒後にポーリング停止
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        setCollectResult((prev) => prev?.replace('（要約生成中...）', '') ?? null);
+      }, 30000);
     } catch {
       setCollectResult('収集に失敗しました');
     } finally {
       setIsCollecting(false);
     }
-  }, []);
+  }, [fromDays, queryClient]);
 
   return (
     <main
@@ -123,6 +147,29 @@ export default function DashboardPage() {
       <div style={{ padding: '24px' }}>
         {/* 手動収集ボタン */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+          <select
+            value={fromDays}
+            onChange={(e) => setFromDays(Number(e.target.value))}
+            disabled={isCollecting}
+            aria-label="記事の取得期間"
+            style={{
+              fontSize: '14px',
+              color: '#E8E8E8',
+              backgroundColor: '#1A1D21',
+              padding: '10px 12px',
+              borderRadius: '6px',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              cursor: isCollecting ? 'not-allowed' : 'pointer',
+              opacity: isCollecting ? 0.7 : 1,
+              outline: 'none',
+            }}
+          >
+            {dateRangeOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
           <button
             type="button"
             onClick={handleCollect}
@@ -143,6 +190,11 @@ export default function DashboardPage() {
           </button>
           {collectResult ? (
             <span style={{ fontSize: '13px', color: '#A0A0A0' }}>{collectResult}</span>
+          ) : null}
+          {fromDays > 30 ? (
+            <span style={{ fontSize: '12px', color: '#F59E0B' }}>
+              ※ 無料プランは過去30日分のみ取得可能
+            </span>
           ) : null}
         </div>
 

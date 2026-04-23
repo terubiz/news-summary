@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.*
 import org.springframework.context.ApplicationEventPublisher
 import java.time.Instant
+import java.time.LocalDate
 
 /**
  * ニュース収集エンドツーエンド統合テスト。
@@ -83,6 +84,9 @@ class NewsCollectionIntegrationTest {
                 executedAt = Instant.now()
             )
         }
+
+        // デフォルト: findByPublishedAtAfter は空リスト（各テストで必要に応じてオーバーライド）
+        whenever(articleRepository.findByPublishedAtAfter(any())).thenReturn(emptyList())
     }
 
     // -------------------------------------------------------
@@ -98,7 +102,21 @@ class NewsCollectionIntegrationTest {
             RawNewsArticle("経済ニュース2", "内容2", "https://example.com/2", "Source2", "2024-01-02T00:00:00Z"),
             RawNewsArticle("経済ニュース3", "内容3", "https://example.com/3", "Source3", "2024-01-03T00:00:00Z")
         )
-        whenever(newsApiClient.fetchLatestNews(any())).thenReturn(rawArticles)
+        whenever(newsApiClient.fetchLatestNews(any(), anyOrNull())).thenReturn(rawArticles)
+
+        // findByPublishedAtAfter: 保存後に期間内記事として3件返す
+        val persistedArticles = rawArticles.mapIndexed { i, raw ->
+            NewsArticle(
+                id = NewsArticleId(100L + i),
+                title = raw.title,
+                content = raw.content,
+                sourceUrl = raw.sourceUrl,
+                sourceName = raw.sourceName,
+                publishedAt = Instant.parse(raw.publishedAt),
+                collectedAt = Instant.now()
+            )
+        }
+        whenever(articleRepository.findByPublishedAtAfter(any())).thenReturn(persistedArticles)
 
         // Act
         val result = useCase.execute(testUserId)
@@ -116,7 +134,7 @@ class NewsCollectionIntegrationTest {
             this.articleCount == 3 && this.status == "SUCCESS" && this.userId == testUserId
         })
 
-        // NewsCollectedEvent が発行された
+        // NewsCollectedEvent が発行された（期間内の全記事）
         verify(eventPublisher).publishEvent(argThat<NewsCollectedEvent> {
             this.userId == testUserId && this.articleIds.size == 3
         })
@@ -134,7 +152,22 @@ class NewsCollectionIntegrationTest {
             RawNewsArticle("経済ニュース1", "内容1", "https://example.com/1", "Source1", "2024-01-01T00:00:00Z"),
             RawNewsArticle("経済ニュース2", "内容2", "https://example.com/2", "Source2", "2024-01-02T00:00:00Z")
         )
-        whenever(newsApiClient.fetchLatestNews(any())).thenReturn(rawArticles)
+        whenever(newsApiClient.fetchLatestNews(any(), anyOrNull())).thenReturn(rawArticles)
+
+        // findByPublishedAtAfter: 1回目で保存された2件を返す
+        val persistedArticles = listOf(
+            NewsArticle(
+                id = NewsArticleId(100L), title = "経済ニュース1", content = "内容1",
+                sourceUrl = "https://example.com/1", sourceName = "Source1",
+                publishedAt = Instant.parse("2024-01-01T00:00:00Z"), collectedAt = Instant.now()
+            ),
+            NewsArticle(
+                id = NewsArticleId(101L), title = "経済ニュース2", content = "内容2",
+                sourceUrl = "https://example.com/2", sourceName = "Source2",
+                publishedAt = Instant.parse("2024-01-02T00:00:00Z"), collectedAt = Instant.now()
+            )
+        )
+        whenever(articleRepository.findByPublishedAtAfter(any())).thenReturn(persistedArticles)
 
         // 1回目: 重複なし
         val result1 = useCase.execute(testUserId)
@@ -147,10 +180,15 @@ class NewsCollectionIntegrationTest {
 
         val result2 = useCase.execute(testUserId)
 
-        // Assert: 2回目は全件スキップ
+        // Assert: 2回目は全件スキップだが、既存記事で要約イベントは発行される
         assertEquals(0, result2.savedCount)
         assertEquals(2, result2.skippedCount)
         assertEquals(0, result2.errorCount)
+
+        // イベントは2回発行される（1回目も2回目も期間内記事がある）
+        verify(eventPublisher, times(2)).publishEvent(argThat<NewsCollectedEvent> {
+            this.userId == testUserId && this.articleIds.size == 2
+        })
     }
 
     @Test
@@ -160,7 +198,22 @@ class NewsCollectionIntegrationTest {
             RawNewsArticle("同じタイトル", "内容A", "https://example.com/a", "SourceA", "2024-01-01T00:00:00Z"),
             RawNewsArticle("同じタイトル", "内容B", "https://example.com/b", "SourceB", "2024-01-02T00:00:00Z")
         )
-        whenever(newsApiClient.fetchLatestNews(any())).thenReturn(rawArticles)
+        whenever(newsApiClient.fetchLatestNews(any(), anyOrNull())).thenReturn(rawArticles)
+
+        // findByPublishedAtAfter: 保存された1件を返す
+        whenever(articleRepository.findByPublishedAtAfter(any())).thenReturn(
+            listOf(
+                NewsArticle(
+                    id = NewsArticleId(100L),
+                    title = "同じタイトル",
+                    content = "内容A",
+                    sourceUrl = "https://example.com/a",
+                    sourceName = "SourceA",
+                    publishedAt = Instant.parse("2024-01-01T00:00:00Z"),
+                    collectedAt = Instant.now()
+                )
+            )
+        )
 
         // 1件目は保存成功、2件目はタイトル重複
         whenever(articleRepository.existsByTitle("同じタイトル"))
@@ -181,7 +234,7 @@ class NewsCollectionIntegrationTest {
     @DisplayName("NewsAPIがエラー時は空リストを返し、収集ログにSUCCESSが記録される")
     fun `should handle empty response from NewsAPI gracefully`() {
         // Arrange: NewsAPIが空リストを返す（接続失敗時の仕様）
-        whenever(newsApiClient.fetchLatestNews(any())).thenReturn(emptyList())
+        whenever(newsApiClient.fetchLatestNews(any(), anyOrNull())).thenReturn(emptyList())
 
         // Act
         val result = useCase.execute(testUserId)
@@ -207,7 +260,22 @@ class NewsCollectionIntegrationTest {
             RawNewsArticle("正常記事", "内容1", "https://example.com/ok", "Source1", "2024-01-01T00:00:00Z"),
             RawNewsArticle("エラー記事", "内容2", "https://example.com/err", "Source2", "2024-01-02T00:00:00Z")
         )
-        whenever(newsApiClient.fetchLatestNews(any())).thenReturn(rawArticles)
+        whenever(newsApiClient.fetchLatestNews(any(), anyOrNull())).thenReturn(rawArticles)
+
+        // findByPublishedAtAfter: 正常保存された1件を返す
+        whenever(articleRepository.findByPublishedAtAfter(any())).thenReturn(
+            listOf(
+                NewsArticle(
+                    id = NewsArticleId(100L),
+                    title = "正常記事",
+                    content = "内容1",
+                    sourceUrl = "https://example.com/ok",
+                    sourceName = "Source1",
+                    publishedAt = Instant.parse("2024-01-01T00:00:00Z"),
+                    collectedAt = Instant.now()
+                )
+            )
+        )
 
         // 2件目の保存で例外
         var callCount = 0
@@ -247,7 +315,22 @@ class NewsCollectionIntegrationTest {
             RawNewsArticle("URL重複", "内容2", "https://example.com/dup-url", "Source2", "2024-01-02T00:00:00Z"),
             RawNewsArticle("タイトル重複", "内容3", "https://example.com/unique", "Source3", "2024-01-03T00:00:00Z")
         )
-        whenever(newsApiClient.fetchLatestNews(any())).thenReturn(rawArticles)
+        whenever(newsApiClient.fetchLatestNews(any(), anyOrNull())).thenReturn(rawArticles)
+
+        // findByPublishedAtAfter: 新規保存された1件を返す
+        whenever(articleRepository.findByPublishedAtAfter(any())).thenReturn(
+            listOf(
+                NewsArticle(
+                    id = NewsArticleId(100L),
+                    title = "新規記事",
+                    content = "内容1",
+                    sourceUrl = "https://example.com/new",
+                    sourceName = "Source1",
+                    publishedAt = Instant.parse("2024-01-01T00:00:00Z"),
+                    collectedAt = Instant.now()
+                )
+            )
+        )
 
         // URL重複
         whenever(articleRepository.existsBySourceUrl("https://example.com/dup-url")).thenReturn(true)

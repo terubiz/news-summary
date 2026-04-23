@@ -27,6 +27,9 @@ class NewsArticleRepositoryImpl(
     override fun findByCollectedAtAfter(after: Instant): List<NewsArticle> =
         jpaRepository.findByCollectedAtAfter(after).map { it.toDomain() }
 
+    override fun findByPublishedAtAfter(after: Instant): List<NewsArticle> =
+        jpaRepository.findByPublishedAtAfter(after).map { it.toDomain() }
+
     override fun save(article: NewNewsArticle): NewsArticle {
         val entity = NewsArticleJpaEntity(
             title = article.title,

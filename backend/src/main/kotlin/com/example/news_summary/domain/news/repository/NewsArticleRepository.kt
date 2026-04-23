@@ -11,5 +11,6 @@ interface NewsArticleRepository {
     fun existsBySourceUrl(sourceUrl: String): Boolean
     fun existsByTitle(title: String): Boolean
     fun findByCollectedAtAfter(after: Instant): List<NewsArticle>
+    fun findByPublishedAtAfter(after: Instant): List<NewsArticle>
     fun save(article: NewNewsArticle): NewsArticle
 }
