@@ -1,6 +1,8 @@
 package com.example.news_summary.settings.application.usecase
 
 import com.example.news_summary.domain.settings.model.CollectionSchedule
+import com.example.news_summary.domain.settings.model.NewCollectionSchedule
+import com.example.news_summary.domain.settings.model.NewSummarySettings
 import com.example.news_summary.domain.settings.model.SummarySettings
 import com.example.news_summary.domain.settings.repository.CollectionScheduleRepository
 import com.example.news_summary.domain.settings.repository.SummarySettingsRepository
@@ -27,21 +29,31 @@ class ManageSettingsUseCase(
     private val settingsRepository: SummarySettingsRepository,
     private val scheduleRepository: CollectionScheduleRepository
 ) {
-    /** 要約設定を取得する。存在しない場合はデフォルト値を返す（要件9.10） */
-    fun getSummarySettings(userId: UserId): SummarySettings =
-        settingsRepository.findByUserId(userId)
-            ?: SummarySettings(userId = userId)
+    /** 要約設定を取得する。存在しない場合はデフォルト値で新規作成して返す（要件9.10） */
+    fun getSummarySettings(userId: UserId): SummarySettings {
+        return settingsRepository.findByUserId(userId)
+            ?: settingsRepository.save(NewSummarySettings(userId = userId))
+    }
 
     @Transactional
     fun updateSummarySettings(userId: UserId, command: UpdateSummarySettingsCommand): SummarySettings {
         val existing = settingsRepository.findByUserId(userId)
-        val settings = (existing ?: SummarySettings(userId = userId)).copy(
-            selectedIndices = command.selectedIndices,
-            analysisPerspectives = command.analysisPerspectives,
-            supplementLevel = command.supplementLevel,
-            summaryMode = command.summaryMode
-        )
-        return settingsRepository.save(settings)
+        return if (existing != null) {
+            settingsRepository.update(existing.copy(
+                selectedIndices = command.selectedIndices,
+                analysisPerspectives = command.analysisPerspectives,
+                supplementLevel = command.supplementLevel,
+                summaryMode = command.summaryMode
+            ))
+        } else {
+            settingsRepository.save(NewSummarySettings(
+                userId = userId,
+                selectedIndices = command.selectedIndices,
+                analysisPerspectives = command.analysisPerspectives,
+                supplementLevel = command.supplementLevel,
+                summaryMode = command.summaryMode
+            ))
+        }
     }
 
     fun getSchedule(userId: UserId): CollectionSchedule? =
@@ -50,10 +62,17 @@ class ManageSettingsUseCase(
     @Transactional
     fun updateSchedule(userId: UserId, command: UpdateScheduleCommand): CollectionSchedule {
         val existing = scheduleRepository.findByUserId(userId)
-        val schedule = (existing ?: CollectionSchedule(userId = userId, cronExpression = "")).copy(
-            cronExpression = command.cronExpression,
-            enabled = command.enabled
-        )
-        return scheduleRepository.save(schedule)
+        return if (existing != null) {
+            scheduleRepository.update(existing.copy(
+                cronExpression = command.cronExpression,
+                enabled = command.enabled
+            ))
+        } else {
+            scheduleRepository.save(NewCollectionSchedule(
+                userId = userId,
+                cronExpression = command.cronExpression,
+                enabled = command.enabled
+            ))
+        }
     }
 }

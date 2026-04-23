@@ -3,6 +3,7 @@ package com.example.news_summary.notification.application.usecase
 import com.example.news_summary.domain.notification.model.ChannelType
 import com.example.news_summary.domain.notification.model.DeliveryChannel
 import com.example.news_summary.domain.notification.model.DeliveryChannelId
+import com.example.news_summary.domain.notification.model.NewDeliveryChannel
 import com.example.news_summary.domain.notification.repository.DeliveryChannelRepository
 import com.example.news_summary.domain.shared.service.EncryptionService
 import com.example.news_summary.domain.user.model.UserId
@@ -43,13 +44,12 @@ class ManageChannelUseCase(
     @Transactional
     fun createChannel(userId: UserId, command: CreateChannelCommand): ChannelDto {
         validateConfig(command.channelType, command.config)
-        val channel = DeliveryChannel(
+        val channel = NewDeliveryChannel(
             userId = userId,
             channelType = command.channelType,
             encryptedConfig = encryptionService.encrypt(command.config),
             deliverySchedule = command.deliverySchedule,
-            filterIndices = command.filterIndices,
-            enabled = true
+            filterIndices = command.filterIndices
         )
         return channelRepository.save(channel).toDto()
     }
@@ -69,7 +69,7 @@ class ManageChannelUseCase(
             filterIndices = command.filterIndices ?: existing.filterIndices,
             enabled = command.enabled ?: existing.enabled
         )
-        return channelRepository.save(updated).toDto()
+        return channelRepository.update(updated).toDto()
     }
 
     @Transactional
@@ -116,7 +116,7 @@ class ManageChannelUseCase(
     }
 
     private fun DeliveryChannel.toDto(): ChannelDto = ChannelDto(
-        id = id?.value ?: throw IllegalStateException("永続化済みチャンネルのIDがnullです"),
+        id = id.value,
         channelType = channelType,
         config = encryptionService.decrypt(encryptedConfig),
         deliverySchedule = deliverySchedule,

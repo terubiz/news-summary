@@ -2,6 +2,8 @@ package com.example.news_summary.integration
 
 import com.example.news_summary.domain.news.model.CollectionLog
 import com.example.news_summary.domain.news.model.CollectionLogId
+import com.example.news_summary.domain.news.model.NewCollectionLog
+import com.example.news_summary.domain.news.model.NewNewsArticle
 import com.example.news_summary.domain.news.model.NewsArticle
 import com.example.news_summary.domain.news.model.NewsArticleId
 import com.example.news_summary.domain.news.repository.CollectionLogRepository
@@ -18,6 +20,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.*
 import org.springframework.context.ApplicationEventPublisher
 import java.time.Instant
+import java.time.LocalDate
 
 /**
  * ニュース収集エンドツーエンド統合テスト。
@@ -55,17 +58,35 @@ class NewsCollectionIntegrationTest {
         whenever(articleRepository.existsBySourceUrl(any())).thenReturn(false)
         whenever(articleRepository.existsByTitle(any())).thenReturn(false)
 
-        // save は引数をそのまま返す（IDを付与）
+        // save は NewNewsArticle を受け取り、永続化済み NewsArticle を返す
         var articleIdCounter = 100L
-        whenever(articleRepository.save(any())).thenAnswer { invocation ->
-            val article = invocation.getArgument<NewsArticle>(0)
-            article.copy(id = NewsArticleId(articleIdCounter++), collectedAt = Instant.now())
+        whenever(articleRepository.save(any<NewNewsArticle>())).thenAnswer { invocation ->
+            val article = invocation.getArgument<NewNewsArticle>(0)
+            NewsArticle(
+                id = NewsArticleId(articleIdCounter++),
+                title = article.title,
+                content = article.content,
+                sourceUrl = article.sourceUrl,
+                sourceName = article.sourceName,
+                publishedAt = article.publishedAt,
+                collectedAt = Instant.now()
+            )
         }
 
-        whenever(collectionLogRepository.save(any())).thenAnswer { invocation ->
-            val log = invocation.getArgument<CollectionLog>(0)
-            log.copy(id = CollectionLogId(1L), executedAt = Instant.now())
+        whenever(collectionLogRepository.save(any<NewCollectionLog>())).thenAnswer { invocation ->
+            val log = invocation.getArgument<NewCollectionLog>(0)
+            CollectionLog(
+                id = CollectionLogId(1L),
+                userId = log.userId,
+                articleCount = log.articleCount,
+                status = log.status,
+                errorMessage = log.errorMessage,
+                executedAt = Instant.now()
+            )
         }
+
+        // デフォルト: findByPublishedAtAfter は空リスト（各テストで必要に応じてオーバーライド）
+        whenever(articleRepository.findByPublishedAtAfter(any())).thenReturn(emptyList())
     }
 
     // -------------------------------------------------------
@@ -81,7 +102,21 @@ class NewsCollectionIntegrationTest {
             RawNewsArticle("経済ニュース2", "内容2", "https://example.com/2", "Source2", "2024-01-02T00:00:00Z"),
             RawNewsArticle("経済ニュース3", "内容3", "https://example.com/3", "Source3", "2024-01-03T00:00:00Z")
         )
-        whenever(newsApiClient.fetchLatestNews(any())).thenReturn(rawArticles)
+        whenever(newsApiClient.fetchLatestNews(any(), anyOrNull())).thenReturn(rawArticles)
+
+        // findByPublishedAtAfter: 保存後に期間内記事として3件返す
+        val persistedArticles = rawArticles.mapIndexed { i, raw ->
+            NewsArticle(
+                id = NewsArticleId(100L + i),
+                title = raw.title,
+                content = raw.content,
+                sourceUrl = raw.sourceUrl,
+                sourceName = raw.sourceName,
+                publishedAt = Instant.parse(raw.publishedAt),
+                collectedAt = Instant.now()
+            )
+        }
+        whenever(articleRepository.findByPublishedAtAfter(any())).thenReturn(persistedArticles)
 
         // Act
         val result = useCase.execute(testUserId)
@@ -92,14 +127,14 @@ class NewsCollectionIntegrationTest {
         assertEquals(0, result.errorCount)
 
         // DB保存が3回呼ばれた
-        verify(articleRepository, times(3)).save(any())
+        verify(articleRepository, times(3)).save(any<NewNewsArticle>())
 
         // 収集ログが記録された
-        verify(collectionLogRepository).save(argThat<CollectionLog> {
+        verify(collectionLogRepository).save(argThat<NewCollectionLog> {
             this.articleCount == 3 && this.status == "SUCCESS" && this.userId == testUserId
         })
 
-        // NewsCollectedEvent が発行された
+        // NewsCollectedEvent が発行された（期間内の全記事）
         verify(eventPublisher).publishEvent(argThat<NewsCollectedEvent> {
             this.userId == testUserId && this.articleIds.size == 3
         })
@@ -117,7 +152,22 @@ class NewsCollectionIntegrationTest {
             RawNewsArticle("経済ニュース1", "内容1", "https://example.com/1", "Source1", "2024-01-01T00:00:00Z"),
             RawNewsArticle("経済ニュース2", "内容2", "https://example.com/2", "Source2", "2024-01-02T00:00:00Z")
         )
-        whenever(newsApiClient.fetchLatestNews(any())).thenReturn(rawArticles)
+        whenever(newsApiClient.fetchLatestNews(any(), anyOrNull())).thenReturn(rawArticles)
+
+        // findByPublishedAtAfter: 1回目で保存された2件を返す
+        val persistedArticles = listOf(
+            NewsArticle(
+                id = NewsArticleId(100L), title = "経済ニュース1", content = "内容1",
+                sourceUrl = "https://example.com/1", sourceName = "Source1",
+                publishedAt = Instant.parse("2024-01-01T00:00:00Z"), collectedAt = Instant.now()
+            ),
+            NewsArticle(
+                id = NewsArticleId(101L), title = "経済ニュース2", content = "内容2",
+                sourceUrl = "https://example.com/2", sourceName = "Source2",
+                publishedAt = Instant.parse("2024-01-02T00:00:00Z"), collectedAt = Instant.now()
+            )
+        )
+        whenever(articleRepository.findByPublishedAtAfter(any())).thenReturn(persistedArticles)
 
         // 1回目: 重複なし
         val result1 = useCase.execute(testUserId)
@@ -130,10 +180,15 @@ class NewsCollectionIntegrationTest {
 
         val result2 = useCase.execute(testUserId)
 
-        // Assert: 2回目は全件スキップ
+        // Assert: 2回目は全件スキップだが、既存記事で要約イベントは発行される
         assertEquals(0, result2.savedCount)
         assertEquals(2, result2.skippedCount)
         assertEquals(0, result2.errorCount)
+
+        // イベントは2回発行される（1回目も2回目も期間内記事がある）
+        verify(eventPublisher, times(2)).publishEvent(argThat<NewsCollectedEvent> {
+            this.userId == testUserId && this.articleIds.size == 2
+        })
     }
 
     @Test
@@ -143,7 +198,22 @@ class NewsCollectionIntegrationTest {
             RawNewsArticle("同じタイトル", "内容A", "https://example.com/a", "SourceA", "2024-01-01T00:00:00Z"),
             RawNewsArticle("同じタイトル", "内容B", "https://example.com/b", "SourceB", "2024-01-02T00:00:00Z")
         )
-        whenever(newsApiClient.fetchLatestNews(any())).thenReturn(rawArticles)
+        whenever(newsApiClient.fetchLatestNews(any(), anyOrNull())).thenReturn(rawArticles)
+
+        // findByPublishedAtAfter: 保存された1件を返す
+        whenever(articleRepository.findByPublishedAtAfter(any())).thenReturn(
+            listOf(
+                NewsArticle(
+                    id = NewsArticleId(100L),
+                    title = "同じタイトル",
+                    content = "内容A",
+                    sourceUrl = "https://example.com/a",
+                    sourceName = "SourceA",
+                    publishedAt = Instant.parse("2024-01-01T00:00:00Z"),
+                    collectedAt = Instant.now()
+                )
+            )
+        )
 
         // 1件目は保存成功、2件目はタイトル重複
         whenever(articleRepository.existsByTitle("同じタイトル"))
@@ -164,7 +234,7 @@ class NewsCollectionIntegrationTest {
     @DisplayName("NewsAPIがエラー時は空リストを返し、収集ログにSUCCESSが記録される")
     fun `should handle empty response from NewsAPI gracefully`() {
         // Arrange: NewsAPIが空リストを返す（接続失敗時の仕様）
-        whenever(newsApiClient.fetchLatestNews(any())).thenReturn(emptyList())
+        whenever(newsApiClient.fetchLatestNews(any(), anyOrNull())).thenReturn(emptyList())
 
         // Act
         val result = useCase.execute(testUserId)
@@ -175,7 +245,7 @@ class NewsCollectionIntegrationTest {
         assertEquals(0, result.errorCount)
 
         // 収集ログは記録される（0件でもログは残す）
-        verify(collectionLogRepository).save(argThat<CollectionLog> {
+        verify(collectionLogRepository).save(argThat<NewCollectionLog> {
             this.articleCount == 0 && this.status == "SUCCESS"
         })
 
@@ -190,15 +260,38 @@ class NewsCollectionIntegrationTest {
             RawNewsArticle("正常記事", "内容1", "https://example.com/ok", "Source1", "2024-01-01T00:00:00Z"),
             RawNewsArticle("エラー記事", "内容2", "https://example.com/err", "Source2", "2024-01-02T00:00:00Z")
         )
-        whenever(newsApiClient.fetchLatestNews(any())).thenReturn(rawArticles)
+        whenever(newsApiClient.fetchLatestNews(any(), anyOrNull())).thenReturn(rawArticles)
+
+        // findByPublishedAtAfter: 正常保存された1件を返す
+        whenever(articleRepository.findByPublishedAtAfter(any())).thenReturn(
+            listOf(
+                NewsArticle(
+                    id = NewsArticleId(100L),
+                    title = "正常記事",
+                    content = "内容1",
+                    sourceUrl = "https://example.com/ok",
+                    sourceName = "Source1",
+                    publishedAt = Instant.parse("2024-01-01T00:00:00Z"),
+                    collectedAt = Instant.now()
+                )
+            )
+        )
 
         // 2件目の保存で例外
         var callCount = 0
-        whenever(articleRepository.save(any())).thenAnswer { invocation ->
+        whenever(articleRepository.save(any<NewNewsArticle>())).thenAnswer { invocation ->
             callCount++
             if (callCount == 2) throw RuntimeException("DB接続エラー")
-            val article = invocation.getArgument<NewsArticle>(0)
-            article.copy(id = NewsArticleId(100L), collectedAt = Instant.now())
+            val article = invocation.getArgument<NewNewsArticle>(0)
+            NewsArticle(
+                id = NewsArticleId(100L),
+                title = article.title,
+                content = article.content,
+                sourceUrl = article.sourceUrl,
+                sourceName = article.sourceName,
+                publishedAt = article.publishedAt,
+                collectedAt = Instant.now()
+            )
         }
 
         val result = useCase.execute(testUserId)
@@ -209,7 +302,7 @@ class NewsCollectionIntegrationTest {
         assertTrue(result.errors.any { it.contains("DB接続エラー") })
 
         // 収集ログのステータスはPARTIAL
-        verify(collectionLogRepository).save(argThat<CollectionLog> {
+        verify(collectionLogRepository).save(argThat<NewCollectionLog> {
             this.status == "PARTIAL" && this.articleCount == 1
         })
     }
@@ -222,7 +315,22 @@ class NewsCollectionIntegrationTest {
             RawNewsArticle("URL重複", "内容2", "https://example.com/dup-url", "Source2", "2024-01-02T00:00:00Z"),
             RawNewsArticle("タイトル重複", "内容3", "https://example.com/unique", "Source3", "2024-01-03T00:00:00Z")
         )
-        whenever(newsApiClient.fetchLatestNews(any())).thenReturn(rawArticles)
+        whenever(newsApiClient.fetchLatestNews(any(), anyOrNull())).thenReturn(rawArticles)
+
+        // findByPublishedAtAfter: 新規保存された1件を返す
+        whenever(articleRepository.findByPublishedAtAfter(any())).thenReturn(
+            listOf(
+                NewsArticle(
+                    id = NewsArticleId(100L),
+                    title = "新規記事",
+                    content = "内容1",
+                    sourceUrl = "https://example.com/new",
+                    sourceName = "Source1",
+                    publishedAt = Instant.parse("2024-01-01T00:00:00Z"),
+                    collectedAt = Instant.now()
+                )
+            )
+        )
 
         // URL重複
         whenever(articleRepository.existsBySourceUrl("https://example.com/dup-url")).thenReturn(true)

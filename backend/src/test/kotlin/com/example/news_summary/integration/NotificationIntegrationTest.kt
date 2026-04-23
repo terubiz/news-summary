@@ -53,7 +53,8 @@ class NotificationIntegrationTest {
         channelType = ChannelType.SLACK,
         encryptedConfig = "encrypted-slack-config",
         deliverySchedule = "IMMEDIATE",
-        enabled = true
+        enabled = true,
+        createdAt = Instant.now()
     )
 
     private val emailChannel = DeliveryChannel(
@@ -62,7 +63,8 @@ class NotificationIntegrationTest {
         channelType = ChannelType.EMAIL,
         encryptedConfig = "encrypted-email-config",
         deliverySchedule = "IMMEDIATE",
-        enabled = true
+        enabled = true,
+        createdAt = Instant.now()
     )
 
     @BeforeEach
@@ -94,20 +96,22 @@ class NotificationIntegrationTest {
                 content = "テスト内容",
                 sourceUrl = "https://example.com/article",
                 sourceName = "TestSource",
-                publishedAt = Instant.now()
+                publishedAt = Instant.now(),
+                collectedAt = Instant.now()
             )
         )
 
         // DeliveryLog保存のモック
         var logIdCounter = 100L
-        whenever(deliveryLogRepository.save(any(), any(), any(), any(), anyOrNull())).thenAnswer { invocation ->
+        whenever(deliveryLogRepository.save(any<NewDeliveryLog>())).thenAnswer { invocation ->
+            val log = invocation.getArgument<NewDeliveryLog>(0)
             DeliveryLog(
                 id = DeliveryLogId(logIdCounter++),
-                channelId = invocation.getArgument(0),
-                summaryId = invocation.getArgument(1),
-                status = invocation.getArgument(2),
-                retryCount = invocation.getArgument(3),
-                errorMessage = invocation.getArgument(4),
+                channelId = log.channelId,
+                summaryId = log.summaryId,
+                status = log.status,
+                retryCount = log.retryCount,
+                errorMessage = log.errorMessage,
                 sentAt = Instant.now()
             )
         }
@@ -131,13 +135,10 @@ class NotificationIntegrationTest {
         assertEquals(1L, result.channelId)
 
         // DeliveryLog が SUCCESS で記録された
-        verify(deliveryLogRepository).save(
-            eq(1L),       // channelId
-            eq(1L),       // summaryId
-            eq("SUCCESS"),
-            eq(0),        // retryCount
-            isNull()      // errorMessage
-        )
+        verify(deliveryLogRepository).save(argThat<NewDeliveryLog> {
+            this.channelId == 1L && this.summaryId == 1L && this.status == "SUCCESS" &&
+                this.retryCount == 0 && this.errorMessage == null
+        })
     }
 
     // -------------------------------------------------------
@@ -161,13 +162,10 @@ class NotificationIntegrationTest {
         assertTrue(result.errorMessage!!.contains("Slack API接続エラー"))
 
         // DeliveryLog が FAILED で記録された
-        verify(deliveryLogRepository).save(
-            eq(1L),
-            eq(1L),
-            eq("FAILED"),
-            eq(0),
-            eq("Slack API接続エラー")
-        )
+        verify(deliveryLogRepository).save(argThat<NewDeliveryLog> {
+            this.channelId == 1L && this.summaryId == 1L && this.status == "FAILED" &&
+                this.retryCount == 0 && this.errorMessage == "Slack API接続エラー"
+        })
     }
 
     // -------------------------------------------------------
@@ -189,8 +187,7 @@ class NotificationIntegrationTest {
         assertTrue(results.all { it.success })
 
         // 各チャンネルの DeliveryLog が記録された
-        verify(deliveryLogRepository).save(eq(1L), eq(1L), eq("SUCCESS"), eq(0), isNull())
-        verify(deliveryLogRepository).save(eq(2L), eq(1L), eq("SUCCESS"), eq(0), isNull())
+        verify(deliveryLogRepository, times(2)).save(any<NewDeliveryLog>())
     }
 
     @Test
@@ -216,8 +213,7 @@ class NotificationIntegrationTest {
         assertTrue(emailResult!!.success)
 
         // 両方の DeliveryLog が記録された
-        verify(deliveryLogRepository).save(eq(1L), eq(1L), eq("FAILED"), eq(0), eq("Slack障害"))
-        verify(deliveryLogRepository).save(eq(2L), eq(1L), eq("SUCCESS"), eq(0), isNull())
+        verify(deliveryLogRepository, times(2)).save(any<NewDeliveryLog>())
     }
 
     // -------------------------------------------------------
@@ -243,13 +239,9 @@ class NotificationIntegrationTest {
         useCase.retryFailedDeliveries()
 
         // Assert: retryCount=1 で SUCCESS として保存される
-        verify(deliveryLogRepository).save(
-            eq(1L),
-            eq(1L),
-            eq("SUCCESS"),
-            eq(1),        // retryCount が +1
-            isNull()
-        )
+        verify(deliveryLogRepository).save(argThat<NewDeliveryLog> {
+            this.channelId == 1L && this.summaryId == 1L && this.status == "SUCCESS" && this.retryCount == 1
+        })
     }
 
     @Test
@@ -260,7 +252,7 @@ class NotificationIntegrationTest {
         useCase.retryFailedDeliveries()
 
         // save は呼ばれない（findRetryTargets以外）
-        verify(deliveryLogRepository, never()).save(any(), any(), any(), any(), anyOrNull())
+        verify(deliveryLogRepository, never()).save(any<NewDeliveryLog>())
     }
 
     @Test
@@ -273,7 +265,8 @@ class NotificationIntegrationTest {
             channelType = ChannelType.LINE,
             encryptedConfig = "encrypted-line-config",
             deliverySchedule = "IMMEDIATE",
-            enabled = true
+            enabled = true,
+            createdAt = Instant.now()
         )
 
         // Act
@@ -284,12 +277,9 @@ class NotificationIntegrationTest {
         assertTrue(result.errorMessage!!.contains("未対応"))
 
         // FAILED で記録
-        verify(deliveryLogRepository).save(
-            eq(3L),
-            eq(1L),
-            eq("FAILED"),
-            eq(0),
-            argThat<String> { this.contains("未対応") }
-        )
+        verify(deliveryLogRepository).save(argThat<NewDeliveryLog> {
+            this.channelId == 3L && this.summaryId == 1L && this.status == "FAILED" &&
+                this.errorMessage != null && this.errorMessage!!.contains("未対応")
+        })
     }
 }

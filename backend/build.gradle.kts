@@ -21,8 +21,6 @@ repositories {
     maven { url = uri("https://repo.spring.io/snapshot") }
 }
 
-extra["springAiVersion"] = "1.0.0-M6"
-
 dependencies {
     // Spring Boot
     implementation("org.springframework.boot:spring-boot-starter-web")
@@ -33,8 +31,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-quartz")
 
-    // Spring AI (OpenAI互換 - Google Gemini無料枠で利用)
-    implementation("org.springframework.ai:spring-ai-openai-spring-boot-starter")
+    // Google Gemini Native SDK (Search Grounding対応)
+    implementation("com.google.genai:google-genai:1.0.0")
 
     // Kotlin
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
@@ -70,12 +68,6 @@ dependencies {
 
     // Mockito-Kotlin
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
-}
-
-dependencyManagement {
-    imports {
-        mavenBom("org.springframework.ai:spring-ai-bom:${property("springAiVersion")}")
-    }
 }
 
 kotlin {

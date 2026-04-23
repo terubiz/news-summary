@@ -1,18 +1,18 @@
 package com.example.news_summary.summary.application.service
 
-import com.example.news_summary.domain.index.model.IndexData
-import com.example.news_summary.domain.index.model.StockSymbol
 import com.example.news_summary.domain.news.model.NewsArticle
 import com.example.news_summary.domain.settings.model.AnalysisPerspective
 import com.example.news_summary.domain.settings.model.SummarySettings
-import com.example.news_summary.domain.summary.model.SummaryMode
 import com.example.news_summary.domain.summary.model.SupplementLevel
 import org.springframework.stereotype.Component
 
 /**
  * AI要約生成用プロンプトビルダー。
- * 補足レベル・文字数モード・分析観点・用語解説指示・株価指数データを
+ * 補足レベル・文字数モード・分析観点・用語解説指示・株価指数名を
  * 動的に組み立ててLLMに渡すプロンプトを構築する。
+ *
+ * 株価指数の最新値はAI側がGoogle Search等で検索して取得する。
+ * アプリ側は指数名のリストのみを渡す。
  */
 @Component
 class SummaryPromptBuilder {
@@ -20,20 +20,24 @@ class SummaryPromptBuilder {
     /**
      * プロンプトを構築する。
      * @param articles 要約対象のニュース記事リスト
-     * @param indices 参照する株価指数データ
+     * @param indexNames 参照する株価指数の名前リスト（例: ["日経225", "S&P500"]）
      * @param settings 要約設定（補足レベル・文字数モード・分析観点）
      * @return LLMに渡すプロンプト文字列
      */
     fun build(
         articles: List<NewsArticle>,
-        indices: List<IndexData>,
+        indexNames: List<String>,
         settings: SummarySettings
     ): String {
         val sb = StringBuilder()
 
-        // システム指示
         sb.appendLine("あなたは経済ニュースの専門アナリストです。")
         sb.appendLine("以下のニュース記事を分析し、株価指数への影響を含めた要約を日本語で生成してください。")
+        sb.appendLine()
+        sb.appendLine("【重要な注意事項】")
+        sb.appendLine("記事の中には、最近公開されたものの内容が過去の出来事のみを扱っているものがあります。")
+        sb.appendLine("現在進行中のニュースや最新の動向に焦点を当て、過去の出来事だけを再報道した記事は要約から除外してください。")
+        sb.appendLine("ただし、過去の出来事が現在の市場動向に直接関連している場合は含めてください。")
         sb.appendLine()
 
         // 文字数モード指示
@@ -71,16 +75,12 @@ class SummaryPromptBuilder {
             sb.appendLine()
         }
 
-        // 株価指数データ
-        if (indices.isNotEmpty()) {
-            sb.appendLine("【現在の株価指数データ】")
-            indices.forEach { index ->
-                val displayName = StockSymbol.displayNameOf(index.symbol)
-                val changeSign = if (index.changeAmount >= java.math.BigDecimal.ZERO) "+" else ""
-                sb.appendLine("- $displayName (${index.symbol}): ${index.currentValue} (${changeSign}${index.changeAmount}, ${changeSign}${index.changeRate}%)")
-            }
-            if (indices.any { it.isStale }) {
-                sb.appendLine("※ 一部のデータはキャッシュされた値です。")
+        // 株価指数（AI側が検索して最新値を取得する）
+        if (indexNames.isNotEmpty()) {
+            sb.appendLine("【対象株価指数】")
+            sb.appendLine("以下の株価指数について、Google検索で最新の値動きを確認し、要約に含めてください：")
+            indexNames.forEach { name ->
+                sb.appendLine("- $name")
             }
             sb.appendLine()
         }
@@ -93,7 +93,7 @@ class SummaryPromptBuilder {
             |  "summaryText": "要約本文（${charLimit}文字以内）",
             |  "indexImpacts": [
             |    {
-            |      "indexSymbol": "指数シンボル（例: N225, SPX, IXIC, GDAXI）",
+            |      "indexSymbol": "指数名（例: 日経225, S&P500, NASDAQ, DAX）",
             |      "impactDirection": "BULLISH または BEARISH または NEUTRAL"
             |    }
             |  ]
@@ -115,7 +115,6 @@ class SummaryPromptBuilder {
         return sb.toString()
     }
 
-    /** 補足レベル別のプロンプト指示文を返す */
     private fun supplementLevelInstruction(level: SupplementLevel): String = when (level) {
         SupplementLevel.BEGINNER ->
             "初心者向けの要約を生成してください。基本的な因果関係を含め、なぜそのニュースが株価に影響するのかをわかりやすく説明してください。"

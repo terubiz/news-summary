@@ -2,6 +2,7 @@ package com.example.news_summary.domain.notification.repository
 
 import com.example.news_summary.domain.notification.model.DeliveryChannel
 import com.example.news_summary.domain.notification.model.DeliveryChannelId
+import com.example.news_summary.domain.notification.model.NewDeliveryChannel
 import com.example.news_summary.domain.user.model.UserId
 
 /**
@@ -13,6 +14,7 @@ interface DeliveryChannelRepository {
     fun findByUserId(userId: UserId): List<DeliveryChannel>
     fun findByUserIdAndEnabledTrue(userId: UserId): List<DeliveryChannel>
     fun findAllByEnabledTrue(): List<DeliveryChannel>
-    fun save(channel: DeliveryChannel): DeliveryChannel
+    fun save(channel: NewDeliveryChannel): DeliveryChannel
+    fun update(channel: DeliveryChannel): DeliveryChannel
     fun delete(id: DeliveryChannelId)
 }

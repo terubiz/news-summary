@@ -3,6 +3,7 @@ package com.example.news_summary.shared.infrastructure.sse
 import com.example.news_summary.domain.shared.service.SsePublisher
 import com.example.news_summary.domain.summary.model.Summary
 import org.slf4j.LoggerFactory
+import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 import java.util.concurrent.CopyOnWriteArrayList
@@ -10,6 +11,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 /**
  * SSEイベント発行サービスのインフラ層実装。
  * SseEmitter を管理し、要約生成完了時にクライアントへイベントを送信する。
+ * 30秒間隔でハートビートを送信し、接続を維持する。
  */
 @Component
 class SsePublisherImpl : SsePublisher {
@@ -28,6 +30,28 @@ class SsePublisherImpl : SsePublisher {
 
         logger.info("SSEクライアント接続: 現在${emitters.size}件")
         return emitter
+    }
+
+    /**
+     * 30秒間隔でハートビートを送信し、SSE接続を維持する。
+     * nginxやブラウザが無通信で接続を切断するのを防ぐ。
+     */
+    @Scheduled(fixedRate = 30000)
+    fun sendHeartbeat() {
+        if (emitters.isEmpty()) return
+
+        val deadEmitters = mutableListOf<SseEmitter>()
+        emitters.forEach { emitter ->
+            try {
+                emitter.send(
+                    SseEmitter.event()
+                        .comment("heartbeat")
+                )
+            } catch (e: Exception) {
+                deadEmitters.add(emitter)
+            }
+        }
+        emitters.removeAll(deadEmitters.toSet())
     }
 
     override fun publishSummaryCreated(summary: Summary) {

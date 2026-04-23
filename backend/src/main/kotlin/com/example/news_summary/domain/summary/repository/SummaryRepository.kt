@@ -1,5 +1,6 @@
 package com.example.news_summary.domain.summary.repository
 
+import com.example.news_summary.domain.summary.model.NewSummary
 import com.example.news_summary.domain.summary.model.Summary
 import com.example.news_summary.domain.summary.model.SummaryId
 import com.example.news_summary.domain.summary.model.SummaryStatus
@@ -34,7 +35,8 @@ interface SummaryRepository {
     /** リトライ対象（FAILED かつ retryCount < 3）を取得 */
     fun findRetryTargets(): List<Summary>
 
-    fun save(summary: Summary): Summary
+    fun save(summary: NewSummary): Summary
+    fun update(summary: Summary): Summary
 }
 
 /** ページネーション結果 */

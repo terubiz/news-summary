@@ -10,4 +10,5 @@ interface NewsArticleJpaRepository : JpaRepository<NewsArticleJpaEntity, Long> {
     fun existsBySourceUrl(sourceUrl: String): Boolean
     fun existsByTitle(title: String): Boolean
     fun findByCollectedAtAfter(after: Instant): List<NewsArticleJpaEntity>
+    fun findByPublishedAtAfter(after: Instant): List<NewsArticleJpaEntity>
 }

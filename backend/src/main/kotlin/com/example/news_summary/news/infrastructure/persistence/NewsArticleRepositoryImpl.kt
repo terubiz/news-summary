@@ -1,5 +1,6 @@
 package com.example.news_summary.news.infrastructure.persistence
 
+import com.example.news_summary.domain.news.model.NewNewsArticle
 import com.example.news_summary.domain.news.model.NewsArticle
 import com.example.news_summary.domain.news.model.NewsArticleId
 import com.example.news_summary.domain.news.repository.NewsArticleRepository
@@ -26,15 +27,16 @@ class NewsArticleRepositoryImpl(
     override fun findByCollectedAtAfter(after: Instant): List<NewsArticle> =
         jpaRepository.findByCollectedAtAfter(after).map { it.toDomain() }
 
-    override fun save(article: NewsArticle): NewsArticle {
+    override fun findByPublishedAtAfter(after: Instant): List<NewsArticle> =
+        jpaRepository.findByPublishedAtAfter(after).map { it.toDomain() }
+
+    override fun save(article: NewNewsArticle): NewsArticle {
         val entity = NewsArticleJpaEntity(
-            id = article.id?.value,
             title = article.title,
             content = article.content,
             sourceUrl = article.sourceUrl,
             sourceName = article.sourceName,
-            publishedAt = article.publishedAt,
-            collectedAt = article.collectedAt
+            publishedAt = article.publishedAt
         )
         return jpaRepository.save(entity).toDomain()
     }

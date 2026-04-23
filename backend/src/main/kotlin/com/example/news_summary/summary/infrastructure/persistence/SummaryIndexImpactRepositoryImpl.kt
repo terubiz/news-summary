@@ -1,5 +1,6 @@
 package com.example.news_summary.summary.infrastructure.persistence
 
+import com.example.news_summary.domain.summary.model.NewSummaryIndexImpact
 import com.example.news_summary.domain.summary.model.SummaryIndexImpact
 import com.example.news_summary.domain.summary.model.SummaryIndexImpactId
 import com.example.news_summary.domain.summary.repository.SummaryIndexImpactRepository
@@ -28,7 +29,7 @@ class SummaryIndexImpactRepositoryImpl(
     override fun deleteBySummaryId(summaryId: Long) =
         jpaRepository.deleteBySummaryId(summaryId)
 
-    override fun saveAll(impacts: List<SummaryIndexImpact>): List<SummaryIndexImpact> {
+    override fun saveAll(impacts: List<NewSummaryIndexImpact>): List<SummaryIndexImpact> {
         val entities = impacts.map {
             SummaryIndexImpactJpaEntity(
                 summaryId = it.summaryId,

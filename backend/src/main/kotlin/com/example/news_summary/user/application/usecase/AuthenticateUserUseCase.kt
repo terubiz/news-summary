@@ -1,6 +1,6 @@
 package com.example.news_summary.user.application.usecase
 
-import com.example.news_summary.domain.user.model.RefreshToken
+import com.example.news_summary.domain.user.model.NewRefreshToken
 import com.example.news_summary.domain.user.repository.RefreshTokenRepository
 import com.example.news_summary.domain.user.repository.UserRepository
 import com.example.news_summary.domain.user.model.UserId
@@ -42,7 +42,7 @@ class AuthenticateUserUseCase(
         val tokenHash = sha256(rawRefreshToken)
 
         refreshTokenRepository.save(
-            RefreshToken(
+            NewRefreshToken(
                 userId = user.id,
                 tokenHash = tokenHash,
                 expiresAt = Instant.now().plusMillis(refreshTokenExpiration)
@@ -73,7 +73,7 @@ class AuthenticateUserUseCase(
         val newTokenHash = sha256(newRawRefreshToken)
 
         refreshTokenRepository.save(
-            RefreshToken(
+            NewRefreshToken(
                 userId = user.id,
                 tokenHash = newTokenHash,
                 expiresAt = Instant.now().plusMillis(refreshTokenExpiration)

@@ -1,5 +1,6 @@
 package com.example.news_summary.domain.summary.repository
 
+import com.example.news_summary.domain.summary.model.NewSummaryIndexImpact
 import com.example.news_summary.domain.summary.model.SummaryIndexImpact
 import com.example.news_summary.domain.summary.model.SummaryIndexImpactId
 import java.util.Optional
@@ -13,5 +14,5 @@ interface SummaryIndexImpactRepository {
     fun findBySummaryId(summaryId: Long): List<SummaryIndexImpact>
     fun findByIndexSymbol(indexSymbol: String): List<SummaryIndexImpact>
     fun deleteBySummaryId(summaryId: Long)
-    fun saveAll(impacts: List<SummaryIndexImpact>): List<SummaryIndexImpact>
+    fun saveAll(impacts: List<NewSummaryIndexImpact>): List<SummaryIndexImpact>
 }

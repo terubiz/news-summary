@@ -1,6 +1,5 @@
 package com.example.news_summary.notification.infrastructure.sender
 
-import com.example.news_summary.domain.index.model.StockSymbol
 import com.example.news_summary.domain.summary.model.Summary
 import com.example.news_summary.domain.summary.model.SummaryIndexImpact
 
@@ -26,7 +25,7 @@ object NotificationMessageBuilder {
         if (impacts.isNotEmpty()) {
             sb.appendLine("📊 株価指数への影響:")
             impacts.forEach { impact ->
-                val displayName = StockSymbol.displayNameOf(impact.indexSymbol)
+                val displayName = impact.indexSymbol
                 val arrow = when (impact.impactDirection.name) {
                     "BULLISH" -> "📈 上昇要因"
                     "BEARISH" -> "📉 下落要因"
@@ -65,7 +64,7 @@ object NotificationMessageBuilder {
             sb.appendLine("<h3>📊 株価指数への影響</h3>")
             sb.appendLine("<ul>")
             impacts.forEach { impact ->
-                val displayName = StockSymbol.displayNameOf(impact.indexSymbol)
+                val displayName = impact.indexSymbol
                 val arrow = when (impact.impactDirection.name) {
                     "BULLISH" -> "📈 上昇要因"
                     "BEARISH" -> "📉 下落要因"

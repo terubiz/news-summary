@@ -80,7 +80,7 @@ export default function LoginPage() {
             color: '#1B1B1B',
           }}
         >
-          Economic News AI
+          News Summary
         </h1>
 
         {/* タブ切り替え */}

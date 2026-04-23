@@ -1,6 +1,7 @@
 package com.example.news_summary.summary.infrastructure.persistence
 
 import com.example.news_summary.domain.news.model.NewsArticleId
+import com.example.news_summary.domain.summary.model.NewSummary
 import com.example.news_summary.domain.summary.model.Summary
 import com.example.news_summary.domain.summary.model.SummaryId
 import com.example.news_summary.domain.summary.model.SummaryStatus
@@ -98,7 +99,25 @@ class SummaryRepositoryImpl(
     override fun findRetryTargets(): List<Summary> =
         jpaRepository.findRetryTargets().map { it.toDomain() }
 
-    override fun save(summary: Summary): Summary {
+    override fun save(summary: NewSummary): Summary {
+        val articleEntities = if (summary.sourceArticleIds.isNotEmpty()) {
+            articleJpaRepository.findAllById(summary.sourceArticleIds.map { it.value }).toMutableSet()
+        } else {
+            mutableSetOf()
+        }
+        val entity = SummaryJpaEntity(
+            userId = summary.userId,
+            summaryText = summary.summaryText,
+            supplementLevel = summary.supplementLevel,
+            summaryMode = summary.summaryMode,
+            status = summary.status,
+            retryCount = summary.retryCount,
+            sourceArticles = articleEntities
+        )
+        return jpaRepository.save(entity).toDomain()
+    }
+
+    override fun update(summary: Summary): Summary {
         val articleEntities = if (summary.sourceArticleIds.isNotEmpty()) {
             articleJpaRepository.findAllById(summary.sourceArticleIds.map { it.value }).toMutableSet()
         } else {

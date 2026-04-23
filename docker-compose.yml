@@ -29,7 +29,6 @@ services:
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-changeme-this-is-a-32-byte-key!}
       GOOGLE_GENAI_API_KEY: ${GOOGLE_GENAI_API_KEY:-}
       NEWS_API_KEY: ${NEWS_API_KEY:-}
-      STOCK_API_KEY: ${STOCK_API_KEY:-}
       SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USERNAME: ${SMTP_USERNAME:-}
