@@ -103,7 +103,9 @@ class ManageChannelUseCase(
             }
             ChannelType.DISCORD -> {
                 require(config.contains("webhookUrl")) { "Discord設定にはwebhookUrlが必要です" }
-                require(config.contains("discord.com/api/webhooks")) { "有効なDiscord Webhook URLを入力してください" }
+                require(
+                    config.contains("discord.com/api/webhooks") || config.contains("discordapp.com/api/webhooks")
+                ) { "有効なDiscord Webhook URLを入力してください" }
             }
             ChannelType.LINE -> {
                 require(config.contains("channelAccessToken")) { "LINE設定にはchannelAccessTokenが必要です" }

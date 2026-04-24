@@ -53,7 +53,7 @@ app:
     refresh-token-expiration: 604800000  # 7 days in milliseconds
   
   encryption:
-    key: ${ENCRYPTION_KEY:changeme-this-is-a-32-byte-key}
+    key: ${ENCRYPTION_KEY:}
   
   rate-limit:
     requests-per-minute: 60
